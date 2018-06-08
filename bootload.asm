@@ -29,15 +29,15 @@ init:
 	mov SS, AX
 	mov SP, 0x7300	;stack top relative address, 0x7300+0x900 (0x7C00)
 	mov BP, SP
-	mov CX, 256	;Set counter for sector length in words (div by 2)
+	mov CX, 256		;Set counter for sector length in words (div by 2)
 	mov AX, 0x7C0	;Set origin data segment (0x07C0:0)
 	mov DS, AX
 	mov AX, 0x50	;Set destination segment (0x0050:0)
 	mov ES, AX
-	xor DI, DI	;Clear pointers, data is at offset 0
+	xor DI, DI		;Clear pointers, data is at offset 0
 	xor SI, SI
 	cld	;Make sure direction flag is cleared
-	rep movsw	;Copy the boot sector from 0x7C00 to 0x500
+	rep movsw		;Copy the boot sector from 0x7C00 to 0x500
 	mov DS, AX
 	sti	;Restore interrupts
 	jmp 0x50:main	;Set the new code segment, jump to the copied data
@@ -47,18 +47,18 @@ main:
 	;Register state: AX: 0050h BX: Unknown CX: 0 DX: ??DR SP: 7300h CS: 0050h DS: 0050h ES: 0050h
 	mov [DriveNumber], DL	;Save the drive number to be used later
 	mov AH, 8
-	int 0x13	;Get drive parameters
+	int 0x13		;Get drive parameters
 	jc diskErrorFatal
-	and CL, 63	;filter lowest 6 bits
+	and CL, 63		;filter lowest 6 bits
 	mov [Disk_SectorsHead], CL	;Save sectors per head
 	inc DH
 	mov [Disk_HeadCount], DH	;Save heads per cylinder
-	mov AX, 0x70;SDA Segment
+	mov AX, 0x70	;SDA Segment
 	mov FS, AX
 	mov AH, 0x41
 	mov DL, [DriveNumber]
 	mov BX, 0x55AA
-	int 0x13	;Check if extensions are supported, if they are, LBA Addressing will be used
+	int 0x13		;Check if extensions are supported, if they are, LBA Addressing will be used
 	cmp BX, 0xAA55
 	jne .noExt
 	test CX, 1
@@ -71,13 +71,13 @@ main:
 	mov [FS:0x11], BX	;FAT Offset is the same as reserved sectors
 	mov AX, [FATSectors]
 	mov CL, [FATCount]
-	mul CX		;Root Dir starts after FAT Size*FAT Count
+	mul CX			;Root Dir starts after FAT Size*FAT Count
 	add AX, BX
 	mov [FS:0x13], AX
 	mov BX, [RootEntryCount]
-	shr BX, 4	;Each entry is 32 bytes long, 512/32=16, optimization for BX/=16
+	shr BX, 4		;Each entry is 32 bytes long, 512/32=16, optimization for BX/=16
 	mov [FS:0x15], BX
-	add AX, BX	;Add the Root Dir offset to its size
+	add AX, BX		;Add the Root Dir offset to its size
 	mov [FS:0x17], AX
 	;Now the values required to load a file are ready
 	mov AX, 0x900	;FAT Copy Offset

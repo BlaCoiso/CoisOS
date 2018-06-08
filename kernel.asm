@@ -2,8 +2,7 @@ BITS 16
 SECTION .text
 
 jmp OS_PreInit
-;Jumptable for Kernel calls
-jmp KernelCall
+jmp KernelCall	;0x7C0:2
 
 OS_PreInit:
 	mov AX, 0x7C0
@@ -86,7 +85,7 @@ KernelCall: ;System call wrapper for far->near calls
 	mov DS, CX	;Load data segment for call table
 	mov CX, [krnCallArgs+BX]
 	shl CX, 1
-	add CX, 2
+	add CX, 2	;First argument is call number, 2 bytes
 	pop DS
 .end:
 	pop BX
@@ -103,8 +102,8 @@ KernelCall: ;System call wrapper for far->near calls
 
 ;DATA
 SECTION .data
-InitStr db 'Initializing kernel...', 0xA, 0xD, 0
-tmpStr db 'The initialization code is unimplemented. Press any key to reboot.', 0xA, 0xD, 0
+InitStr db 'Initializing kernel...', 0xD, 0xA, 0
+tmpStr db 'The initialization code is unimplemented. Press any key to reboot.', 0xD, 0xA, 0
 krnCallTable dw ReadSector, WriteSector, StringLength, PrintString
 krnCallArgs dw 4, 4, 1, 1
 KernelCallCount EQU 4

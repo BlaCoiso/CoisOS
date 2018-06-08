@@ -88,9 +88,9 @@ PrintHex: ;void PrintHex(int value)
 	ret 2
 
 PrintNewLine:
-	mov AL, 0xA
-	call _PrintChar
 	mov AL, 0xD
+	call _PrintChar
+	mov AL, 0xA
 	call _PrintChar
 	ret
 
@@ -349,13 +349,181 @@ PrintUInt: ;void PrintUInt(int value)
 	pop BP
 	ret 2
 
-ReadString: ;void ReadString(char* buffer)
-	;TODO
-	ret 2
-
 ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
-	;TODO
-	ret 2
+	;[BP+10]- Max Length
+	;[BP+8] - Buffer pointer
+	;[BP+6] - Return address
+	push ES	;[BP+4]
+	push DI	;[BP+2]
+	push BP
+	mov BP, SP
+	mov AX, DS
+	mov ES, AX		;Load DS into ES
+	mov DI, [BP+8]	;Load buffer pointer
+	sub SP, 6		;Reserve space for local variables
+	;[BP-2] - Character count
+	;[BP-4] - Cursor pos
+	;[BP-6] - Insert Mode
+	call GetCursorPos
+	mov [BP-4], AX	;Store cursor position
+	mov BYTE [BP-6], 0
+.keyLoop:
+	call GetKey
+	cmp AX, 0x0E08
+	je .backspace
+	cmp AX, 0x5300
+	je .delete
+	cmp AX, 0x4F00
+	je .curEnd
+	cmp AX, 0x4700
+	je .curStart
+	cmp AX, 0x4B00
+	je .curLeft
+	cmp AX, 0x4D00
+	je .curRight
+	cmp AX, 0x1C0D
+	je .done
+	cmp AX, 0x5200
+	je .toggleIns
+	cmp AL, 0x20
+	jb .keyLoop	;Invalid/unsupported character
+	cmp AL, 126
+	ja .keyLoop
+	call .addChar
+	jmp .keyLoop
+.backspace:
+	cmp DI, [BP+8]
+	je .keyLoop	;Already at start of buffer
+	dec DI
+	call .shiftBufferLeft
+	jmp .keyLoop
+.delete:
+	cmp BYTE [DI], 0
+	jz .keyLoop	;No characters after this
+	call .shiftBufferLeft
+	jmp .keyLoop
+.curEnd:
+	mov DI, [BP+8]
+	add DI, [BP-2]
+	call .updateCursor
+	jmp .keyLoop
+.curStart:
+	mov DI, [BP+8]
+	call .updateCursor
+	jmp .keyLoop
+.curLeft:
+	cmp DI, [BP+8]
+	je .keyLoop	;Already at start of buffer
+	dec DI
+	call .updateCursor
+	jmp .keyLoop
+.curRight:
+	cmp BYTE [DI], 0
+	jz .keyLoop	;No characters after this
+	inc DI
+	call .updateCursor
+	jmp .keyLoop
+.toggleIns:
+	not BYTE [BP-6]
+	jmp .keyLoop
+.done:
+	mov AX, [BP-4]
+	mov DI, [BP+8]
+	add DI, AX
+	xor AX, AX
+	stosb	;Add null byte at the end
+	call PrintNewLine
+	mov SP, BP
+	pop BP
+	pop DI
+	pop ES
+	ret 4
+.addChar:
+	test BYTE [BP-6], 0xFF
+	jnz .charInsert
+	mov CX, DI
+	sub CX, [BP+8]	;Get current character count
+	cmp CX, [BP+10]
+	je .charEnd
+	push AX
+	cmp BYTE [DI], 0
+	je .skipShift
+	call .shiftBufferRight
+.skipShift:
+	pop AX
+	stosb
+	inc WORD [BP-2]
+	call .updateBuffer
+.charEnd:
+	ret
+.charInsert:
+	mov [DI], AL
+	inc DI
+	call .updateBuffer
+	ret
+.updateCursor:
+	;TODO: Properly support line changes
+	mov CX, DI
+	sub CX, [BP+8]	;Get current character count
+	mov AX, [BP-4]
+	mov AL, CL
+	push AX
+	call SetCursorPos
+	ret
+.updateBuffer:
+	mov AX, [BP-4]
+	push AX
+	call SetCursorPos
+	mov AX, [BP+8]
+	push AX
+	call PrintString
+	mov AL, ' '
+	call _PrintChar
+	call .updateCursor
+	ret
+.shiftBufferLeft:
+	push DI
+	dec WORD [BP-2]
+.shiftLoopL:
+	mov AL, [DI+1]
+	mov [DI], AL
+	inc DI
+	test AL, AL
+	jnz .shiftLoopL
+
+	pop DI
+	call .updateBuffer
+	ret
+.shiftBufferRight:
+	mov CX, [BP-2]	;Load character count
+	push DI
+	xor AL, AL
+	repnz scasb		;Seek to the end of the buffer
+	mov AX, [BP-2]
+	sub AX, CX
+	mov CX, AX		;Load character count after cursor
+.shiftLoopR:
+	test CX, CX
+	jz .shiftEnd
+	mov AL, [DI-1]
+	mov [DI], AL
+	dec CX
+	dec DI
+	jmp .shiftLoopR
+.shiftEnd:
+	pop DI
+	ret
+
+ReadString: ;void ReadString(char* buffer)
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	push 0xFFFF
+	push AX
+	call ReadStringSafe
+	mov SP, BP
+	pop BP
+	ret
 	
 DrawBox: ;void DrawBox(int x, int y, int width, int height)
 	;TODO
