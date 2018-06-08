@@ -1,0 +1,12 @@
+{
+    "clusterSize": 2,
+    "rootEntryCount": 128,
+    "FATSize": 64,
+    "files": [
+        {
+            "name": "system.krn",
+            "path": "kernel.bin",
+            "flags": 5
+        }
+    ]
+}

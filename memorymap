@@ -1,0 +1,30 @@
+0x0 - 0x3FF: IVT
+0x400 - 0x4FF: BDA
+0x500 - 0x7BFF: Unused - Free
+0x7C00 - 0x7DFF: Boot sector
+0x7E00 - 0x7FFFF: Unused - Free
+0x80000 - 0x9FBFF: Partially free; check EBDA size before use
+0x9FC00 - 0x9FFFF: EBDA
+0xA0000 - 0xFFFFF: VRAM, ROM, VBIOS/BIOS, HW Data, etc (unusable) 
+
+===================== OS Memory Map =====================
+0x500 -	0x6FF:	Boot sector copy, used for disk info stuff
+0x700 -	0x8FF:	System data area (SDA), contains data required for the OS
+0x900 -	0x7BFF:	Reserved for stack (29440 bytes)
+0x7C00 -0x7DFF:	Starts with boot sector, later will have Kernel
+0x7E00 -0x8FFF:	Reserved for Kernel
+0x9000 -0x93FF:	FAT Copy
+0x9400 -0x97FF: Root Dir Copy
+0x9800 -0x9BFF: SubDir Copy
+
+===================== SDA Structure =====================
+0x700 - 0x70F (16 Bytes): DAP (Disk Access Packet)
+0x710 - BYTE: BIOS allows LBA
+0x711 - WORD: FAT Offset
+0x713 - WORD: FAT Dir Offset
+0x715 - WORD: FAT Dir Size
+0x717 - WORD: FAT FData Offset
+0x719 - BYTE: Selected FAT
+0x71A - WORD: Cached FAT Sector (Offset)
+0x71C - WORD: Cached FAT Root Dir Sector (Offset)
+0x71E - WORD: Cached SubDir Sector (FData Offset)
