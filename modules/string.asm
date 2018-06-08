@@ -13,10 +13,12 @@ StringLength: ;returns the length in AX of the C string at DS:[BP+4] (first arg)
 	xor AX, AX
 	mov CX, 0xFFFF
 	repnz scasb
+	inc CX
 	mov AX, 0xFFFF
 	sub AX, CX
 	pop ES
 	pop CX
+	pop DI
 	mov SP, BP
 	pop BP
 	ret 2 ;removes arg from stack (2 bytes)
@@ -283,7 +285,7 @@ PrintTitle: ;void PrintTitle(char* string)
 	xor AH, AH
 	add [BP-2], AX	;Add cursor X offset into length
 	mov AX, [BP-2]
-	inc AX
+	add AX, 2
 	mov CX, 80	;Each line is 80 characters
 	cmp AX, CX
 	ja .tooBig
@@ -364,7 +366,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	push BP
 	mov BP, SP
 	sub SP, 6		;Reserve space for local variables
-	mov BYTE [BP-2], 0	;Character count
+	;[BP-2] - Character count
 	;[BP-4] - Cursor pos
 	mov WORD [BP-6], 0	;Insert Mode
 	push ES
@@ -374,6 +376,13 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	mov DI, [BP+4]	;Load buffer pointer
 	call GetCursorPos
 	mov [BP-4], AX	;Store cursor position
+	push DI
+	call StringLength
+	mov [BP-2], AX	;If the buffer isn't empty, load buffer as input
+	test AX, AX
+	jz .keyLoop
+	add DI, AX
+	call .updateBuffer
 .keyLoop:
 	call GetKey
 	cmp AX, 0x0E08
@@ -449,7 +458,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	jnz .charInsert
 	mov CX, DI
 	sub CX, [BP+4]	;Get current character count
-	cmp CX, [BP+6]
+	cmp CX, [BP+6]	;Check if length limit reached
 	je .charEnd
 	mov CX, [BP-2]
 	cmp CX, [BP+6]
@@ -527,6 +536,9 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	dec DI
 	jmp .shiftLoopR
 .shiftEnd:
+	mov DI, [BP+4]
+	add DI, [BP-2]
+	mov BYTE [DI+1], 0
 	pop DI
 	ret
 

@@ -2,6 +2,7 @@
     "clusterSize": 2,
     "rootEntryCount": 128,
     "FATSize": 64,
+    "descriptor": 248,
     "files": [
         {
             "name": "system.krn",

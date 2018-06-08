@@ -78,14 +78,14 @@ function writeFile(file) {
     while (processedBytes < flen) {
         fdata.copy(FileDataBuffer, (nextFreeCluster - 2) * clusterSize, processedBytes, Math.min(processedBytes + clusterSize, flen));
         processedBytes += clusterSize;
-        if (processedBytes >= flen) FATBuffer.writeUInt16LE(0xFFFF, nextFreeCluster * 2);
+        if (processedBytes >= flen) FATBuffer.writeUInt16LE(0xFFF0 | FSData.descriptor, nextFreeCluster * 2);
         else FATBuffer.writeUInt16LE(nextFreeCluster + 1, nextFreeCluster * 2);
         ++nextFreeCluster;
         if (FileDataBuffer.byteLength < nextFreeCluster * clusterSize) allocFileBuffer();
     }
 }
 
-FATBuffer.writeUInt16LE(0xFFF8, 0);
+FATBuffer.writeUInt16LE(0xFFF0 | FSData.descriptor, 0);
 FATBuffer.writeUInt16LE(0xFFFF, 2);
 for (let file of FSData.files) {
     writeFile(file);
