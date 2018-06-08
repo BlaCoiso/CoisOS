@@ -46,6 +46,15 @@ _PrintChar:
 	pop BP ;Some VBIOSes have a bug that destroys BP
 	ret
 
+PrintChar:
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	call _PrintChar
+	mov SP, BP
+	pop BP
+	ret 2
+
 _PrintByteHex: ;Prints the byte in AL in hex
 	push AX
 	shr AL, 4
@@ -350,24 +359,21 @@ PrintUInt: ;void PrintUInt(int value)
 	ret 2
 
 ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
-	;[BP+10]- Max Length
-	;[BP+8] - Buffer pointer
-	;[BP+6] - Return address
-	push ES	;[BP+4]
-	push DI	;[BP+2]
+	;[BP+6] - Max Length
+	;[BP+4] - Buffer pointer
 	push BP
 	mov BP, SP
+	sub SP, 6		;Reserve space for local variables
+	mov BYTE [BP-2], 0	;Character count
+	;[BP-4] - Cursor pos
+	mov WORD [BP-6], 0	;Insert Mode
+	push ES
+	push DI
 	mov AX, DS
 	mov ES, AX		;Load DS into ES
-	mov DI, [BP+8]	;Load buffer pointer
-	sub SP, 6		;Reserve space for local variables
-	;[BP-2] - Character count
-	;[BP-4] - Cursor pos
-	;[BP-6] - Insert Mode
+	mov DI, [BP+4]	;Load buffer pointer
 	call GetCursorPos
 	mov [BP-4], AX	;Store cursor position
-	mov BYTE [BP-6], 0
-	mov WORD [BP-2], 0
 .keyLoop:
 	call GetKey
 	cmp AX, 0x0E08
@@ -393,7 +399,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	call .addChar
 	jmp .keyLoop
 .backspace:
-	cmp DI, [BP+8]
+	cmp DI, [BP+4]
 	je .keyLoop	;Already at start of buffer
 	dec DI
 	call .shiftBufferLeft
@@ -404,16 +410,16 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	call .shiftBufferLeft
 	jmp .keyLoop
 .curEnd:
-	mov DI, [BP+8]
+	mov DI, [BP+4]
 	add DI, [BP-2]
 	call .updateCursor
 	jmp .keyLoop
 .curStart:
-	mov DI, [BP+8]
+	mov DI, [BP+4]
 	call .updateCursor
 	jmp .keyLoop
 .curLeft:
-	cmp DI, [BP+8]
+	cmp DI, [BP+4]
 	je .keyLoop	;Already at start of buffer
 	dec DI
 	call .updateCursor
@@ -429,24 +435,24 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	jmp .keyLoop
 .done:
 	mov AX, [BP-4]
-	mov DI, [BP+8]
+	mov DI, [BP+4]
 	add DI, AX
 	xor AX, AX
 	stosb	;Add null byte at the end
-	mov SP, BP
-	pop BP
 	pop DI
 	pop ES
+	mov SP, BP
+	pop BP
 	ret 4
 .addChar:
 	test BYTE [BP-6], 0xFF
 	jnz .charInsert
 	mov CX, DI
-	sub CX, [BP+8]	;Get current character count
-	cmp CX, [BP+10]
+	sub CX, [BP+4]	;Get current character count
+	cmp CX, [BP+6]
 	je .charEnd
 	mov CX, [BP-2]
-	cmp CX, [BP+10]
+	cmp CX, [BP+6]
 	je .charEnd
 	push AX
 	cmp BYTE [DI], 0
@@ -462,8 +468,8 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 .charInsert:
 	mov [DI], AL
 	inc DI
-	mov CX, [BP+8]
-	add CX, [BP+10]
+	mov CX, [BP+4]
+	add CX, [BP+6]
 	cmp DI, CX
 	jb .insertOK
 	mov DI, CX
@@ -474,7 +480,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 .updateCursor:
 	;TODO: Properly support line changes
 	mov CX, DI
-	sub CX, [BP+8]	;Get current character count
+	sub CX, [BP+4]	;Get current character count
 	mov AX, [BP-4]
 	mov AL, CL
 	push AX
@@ -484,7 +490,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	mov AX, [BP-4]
 	push AX
 	call SetCursorPos
-	mov AX, [BP+8]
+	mov AX, [BP+4]
 	push AX
 	call PrintString
 	mov AL, ' '
@@ -534,6 +540,14 @@ ReadString: ;void ReadString(char* buffer)
 	mov SP, BP
 	pop BP
 	ret
+
+_ChrToUppercase: ;Converts character in AL to uppercase
+	cmp AL, 'a'
+	jb .skip
+	cmp AL, 'z'
+	ja .skip
+	sub AL, 32
+.skip: ret
 	
 DrawBox: ;void DrawBox(int x, int y, int width, int height)
 	;TODO

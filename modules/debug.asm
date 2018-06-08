@@ -126,6 +126,7 @@ DumpRegisters: ;void DumpRegisters()
 	mov BL, 8
 	call .printRegister
 	mov AX, [BP+10]	;Load SP
+	add AX, 2		;DS was added to the stack before saving SP
 	mov BL, 10
 	call .printRegister
 	mov AX, [BP+8]	;Load BP
@@ -136,7 +137,7 @@ DumpRegisters: ;void DumpRegisters()
 	call .printRegister
 	call PrintNewLine
 	push _FlagStr
-	call PrintTitle
+	call PrintString
 	mov AX, [BP+2]	;Load flags
 	xor BX, BX
 	test AX, 1
@@ -183,7 +184,8 @@ DumpRegisters: ;void DumpRegisters()
 	mov BL, 8
 	call .printFlag
 .endFlags:
-	call PrintNewLine
+	mov AL, ']'
+	call _PrintChar
 	call PrintNewLine
 	mov SP, BP
 	pop BP
@@ -239,7 +241,7 @@ db 'IP:', 0, 'SP:', 0, 'BP:', 0, 'DI:', 0, 'SI:', 0
 _FlagNames db 'CF ', 0, 'PF ', 0, 'AF ', 0, 'ZF ', 0
 db 'SF ', 0, 'TF ', 0, 'IF ', 0, 'DF ', 0, 'OF ', 0
 _RegStr db 'CPU Registers', 0
-_FlagStr db 'CPU Flags', 0
+_FlagStr db 'CPU Flags: [ ', 0
 _DumpStr1 db 'Dumping ', 0
 _DumpStr2 db ' bytes of memory at 0x', 0
 _DumpStr3 db ':0x', 0

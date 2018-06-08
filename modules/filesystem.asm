@@ -96,11 +96,12 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	;Filename is in DS
 	push BP
 	mov BP, SP
+	sub SP, 2		;Reserve space for local vars
+	;[BP-2] - Current entry
 	push ES
 	push FS
 	push DI
 	push SI
-	sub SP, 2		;Reserve space for local vars
 	mov AX, 0x70
 	mov FS, AX		;Load SDA
 	mov AX, 0x940
@@ -140,7 +141,6 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 .fail:
 	mov AX, 0xFFFF	;File not found
 .end:
-	add SP, 2		;Clean local vars
 	pop SI
 	pop DI
 	pop FS
@@ -152,12 +152,12 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 _Get8_3Name: ;[BP+4] = Filename pointer
 	push BP
 	mov BP, SP
+	sub SP, 2 ;Reserve space for local vars
+	mov BYTE [BP-2], 0	;[BP-2] = Before Dot Count
+	mov BYTE [BP-3], 0	;[BP-3] = After Dot Count
 	push SI ;Save registers
 	push DI
 	push ES
-	sub SP, 2 ;Reserve space for local vars
-	mov BYTE [BP-8], 0	;[BP-8] = Before Dot Count
-	mov BYTE [BP-9], 0	;[BP-9] = After Dot Count
 	mov AX, 0x7C0
 	mov ES, AX
 	mov DI, _8_3NameBuf
@@ -218,55 +218,54 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	;If all checks failed, the character is invalid
 	jmp .charLoop
 .space:
-	cmp BYTE [BP-8], 0
+	cmp BYTE [BP-2], 0
 	je .charLoop ;Don't allow space on beginning
 	jmp .writeChr
 .dot:
-	cmp BYTE [BP-8], 0
+	cmp BYTE [BP-2], 0
 	je .charLoop ;Dots aren't allowed in the first character
-	cmp BYTE [BP-9], 0
+	cmp BYTE [BP-3], 0
 	jne .charLoop ;Dots aren't allowed in the extension
 .padLoop:
-	cmp BYTE [BP-8], 8
+	cmp BYTE [BP-2], 8
 	je .charLoop
 	mov AL, ' '
 	stosb
-	inc BYTE [BP-8]
+	inc BYTE [BP-2]
 	jmp .padLoop
 .writeChr:
-	cmp BYTE [BP-8], 8
+	cmp BYTE [BP-2], 8
 	jb .writeBefore
-	cmp BYTE [BP-9], 0
+	cmp BYTE [BP-3], 0
 	je .charLoop ;Ignore everything until a dot
-	cmp BYTE [BP-9], 3
+	cmp BYTE [BP-3], 3
 	jb .writeAfter
 	jmp .end ;No more space available, ignore remaining characters
 .writeBefore:
 	stosb
-	inc BYTE [BP-8]
+	inc BYTE [BP-2]
 	jmp .charLoop
 .writeAfter:
 	stosb
-	inc BYTE [BP-9]
+	inc BYTE [BP-3]
 	jmp .charLoop
 .end:
-	cmp BYTE [BP-8], 8
+	cmp BYTE [BP-2], 8
 	je .padDot
 	mov AL, ' '
 	stosb
-	inc BYTE [BP-8]
+	inc BYTE [BP-2]
 	jmp .end
 .padDot:
-	cmp BYTE [BP-9], 3
+	cmp BYTE [BP-3], 3
 	je .padEnd
 	mov AL, ' '
 	stosb
-	inc BYTE [BP-9]
+	inc BYTE [BP-3]
 	jmp .padDot
 .padEnd:
 	xor AL, AL
 	stosb ;End with null byte
-	add SP, 2 ;Clean up local vars
 	pop ES
 	pop DI
 	pop SI
@@ -274,23 +273,122 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	pop BP
 	ret 2
 
-_ChrToUppercase: ;Converts character in AL to uppercase
-	cmp AL, 'a'
-	jb .skip
-	cmp AL, 'z'
-	ja .skip
-	sub AL, 32
-.skip: ret
+_GetNextCluster: ;int _GetNextCluster(int cluster)
+	push BP
+	mov BP, SP
+	push FS
+	push BX
+	mov AX, 0x900
+	mov FS, AX
+	mov BX, [BP+4]
+	shl BX, 1	;Each cluster is 2 bytes
+	;TODO: Get the right FAT offset, load it, recalculate offset
+	;FIXME: This code will FAIL with cluster number > 512
+	mov AX, [FS:BX]
+	pop BX
+	pop FS
+	mov SP, BP
+	pop BP
+	ret 2
+
+_LoadCluster:	;int _LoadCluster(int cluster, void* buffer, int segment)
+	push BP
+	mov BP, SP
+	sub SP, 2	;[BP-2] - Sectors per cluster
+	push FS
+	mov AX, 0x50
+	mov AX, [BP+8]
+	push AX
+	mov AX, [BP+6]
+	push AX
+	mov FS, AX	;Load System segment
+	mov AX, [FS:0xD]	;Load sectors per cluster
+	mov [BP-2], AX
+	push AX
+	mov AX, [FS:0x217]	;Load File Data offset
+	push AX
+	call ReadSector
+	mov AX, [BP-2]
+	shl AX, 9	;Multiply by 512 (sector size)
+	add AX, [BP+6]
+	pop FS
+	mov SP, BP
+	pop BP
+	ret 6
 
 ReadFile: ;int ReadFile(char* filename, void* buffer, int segment)
-	;TODO
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	push AX
+	call FindFile
+	cmp AX, 0xFFFF
+	je .noFile
+	mov CX, [BP+8]
+	push CX
+	mov CX, [BP+6]
+	push CX
+	push AX
+	call ReadFileEntry
+.noFile:
+	mov SP, BP
+	pop BP
 	ret 6
 
 ReadFile8_3: ;int ReadFile8_3(char* filename8_3, void* buffer, int segment)
-	;TODO
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	push AX
+	call FindFile8_3
+	cmp AX, 0xFFFF
+	je .noFile
+	mov CX, [BP+8]
+	push CX
+	mov CX, [BP+6]
+	push CX
+	push AX
+	call ReadFileEntry
+.noFile:
+	mov SP, BP
+	pop BP
 	ret 6
+
 ReadFileEntry: ;int ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
-	;TODO
+	push BP
+	mov BP, SP
+	sub SP, 4	;Local variables
+	;[BP-2] - Previous cluster
+	mov WORD [BP-4], 0	;Clusters processed
+	push ES
+	push SI
+	mov AX, 0x900
+	mov ES, AX	;Load FAT Data segment
+	mov SI, [BP+4]
+	add SI, 0x400	;Load file entry
+	mov AX, [ES:SI+0x1A];Load cluster number
+	mov [BP-2], AX
+.loadLoop:
+	cmp AX, 0xFFF8
+	jae .loadEnd
+	mov AX, [BP+8]
+	push AX
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP-2]
+	push AX
+	push AX
+	call _GetNextCluster
+	mov [BP-2], AX	;Save next cluster
+	call _LoadCluster
+	mov [BP+6], AX	;Save new buffer offset
+	mov AX, [BP-2]
+	jmp .loadLoop
+.loadEnd:
+	pop SI
+	pop ES
+	mov SP, BP
+	pop BP
 	ret 6
 
 SECTION .bss
