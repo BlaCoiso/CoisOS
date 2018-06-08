@@ -367,6 +367,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	call GetCursorPos
 	mov [BP-4], AX	;Store cursor position
 	mov BYTE [BP-6], 0
+	mov WORD [BP-2], 0
 .keyLoop:
 	call GetKey
 	cmp AX, 0x0E08
@@ -432,7 +433,6 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	add DI, AX
 	xor AX, AX
 	stosb	;Add null byte at the end
-	call PrintNewLine
 	mov SP, BP
 	pop BP
 	pop DI
@@ -443,6 +443,9 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	jnz .charInsert
 	mov CX, DI
 	sub CX, [BP+8]	;Get current character count
+	cmp CX, [BP+10]
+	je .charEnd
+	mov CX, [BP-2]
 	cmp CX, [BP+10]
 	je .charEnd
 	push AX
@@ -459,6 +462,13 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 .charInsert:
 	mov [DI], AL
 	inc DI
+	mov CX, [BP+8]
+	add CX, [BP+10]
+	cmp DI, CX
+	jb .insertOK
+	mov DI, CX
+	mov BYTE [DI], 0
+.insertOK:
 	call .updateBuffer
 	ret
 .updateCursor:
