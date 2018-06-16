@@ -65,7 +65,7 @@ _PrintByteHex:	;Prints the byte in AL in hex
 	call _PrintHexChar
 	ret
 
-PrintByteHex: ;void PrintByteHex(int value)
+PrintByteHex: ;void PrintByteHex(char value)
 	push BP
 	mov BP, SP
 	mov AL, [BP+4]

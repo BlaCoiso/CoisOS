@@ -323,7 +323,7 @@ _LoadCluster:	;int _LoadCluster(int cluster, void* buffer, int segment)
 	pop BP
 	ret 6
 
-ReadFile: ;int ReadFile(char* filename, void* buffer, int segment)
+ReadFile: ;bool ReadFile(char* filename, void* buffer, int segment)
 	push BP
 	mov BP, SP
 	mov AX, [BP+4]
@@ -342,7 +342,7 @@ ReadFile: ;int ReadFile(char* filename, void* buffer, int segment)
 	pop BP
 	ret 6
 
-ReadFile8_3: ;int ReadFile8_3(char* filename8_3, void* buffer, int segment)
+ReadFile8_3: ;bool ReadFile8_3(char* filename8_3, void* buffer, int segment)
 	push BP
 	mov BP, SP
 	mov AX, [BP+4]
@@ -361,7 +361,7 @@ ReadFile8_3: ;int ReadFile8_3(char* filename8_3, void* buffer, int segment)
 	pop BP
 	ret 6
 
-ReadFileEntry: ;int ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
+ReadFileEntry: ;void ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
 	push BP
 	mov BP, SP
 	sub SP, 4	;Local variables
