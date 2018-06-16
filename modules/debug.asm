@@ -126,7 +126,7 @@ DumpRegisters: ;void DumpRegisters()
 	mov BL, 8
 	call .printRegister
 	mov AX, [BP+10]	;Load SP
-	add AX, 2		;DS was added to the stack before saving SP
+	add AX, 4		;DS and return addr was added to the stack before saving SP
 	mov BL, 10
 	call .printRegister
 	mov AX, [BP+8]	;Load BP

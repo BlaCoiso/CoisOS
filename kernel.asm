@@ -26,13 +26,33 @@ OS_PreInit:
 OS_Init:
 	push InitStr
 	call PrintString;PrintString(InitStr)
-	push 0xC0
-	push 0x7C0
-	push 0
-	call DumpMemory	;DumpMemory(0,0x7C0, 0xC0)
 	call DumpRegisters
-	push tmpStr
-	call PrintString;PrintString(tmpStr)
+	push TestStr
+	call PrintString;PrintString(TestStr)
+	push 0x9C0
+	push 0
+	push TestFname
+	call ReadFile
+	cmp AX, 0xFFFF
+	jne .ReadOK
+	push ReadFailStr
+	call PrintString
+	jmp Reboot
+	.ReadOK:
+	push DS
+	push ES
+	push BP
+	mov BP, SP
+	mov AX, 0x9C0
+	mov DS, AX
+	mov ES, AX
+	call 0x9C0:0
+	mov SP, BP
+	pop BP
+	pop ES
+	pop DS
+	push TestDoneStr
+	call PrintString
 	jmp Reboot
 	
 ;System Functions
@@ -94,6 +114,8 @@ KernelCall: ;System call wrapper for far->near calls
 	mov [CS:.farRet+1], CX	;Hack: Load arg size in bytes into the return instruction
 .farRet: retf 2
 
+EmptyCall: ret
+
 ;INCLUDES
 %include "modules/string.asm"
 %include "modules/disk.asm"
@@ -103,7 +125,20 @@ KernelCall: ;System call wrapper for far->near calls
 ;DATA
 SECTION .data
 InitStr db 'Initializing kernel...', 0xD, 0xA, 0
-tmpStr db 'The initialization code is unimplemented. Press any key to reboot.', 0xD, 0xA, 0
-krnCallTable dw ReadSector, WriteSector, StringLength, PrintString
-krnCallArgs dw 4, 4, 1, 1
-KernelCallCount EQU 4
+TestStr db 'Loading test program...', 0xD, 0xA, 0
+TestFname db 'test.bin', 0
+ReadFailStr db 'Failed to find/load test program.', 0xD, 0xA, 0
+TestDoneStr db 'Returned from test program. Press any key to reboot', 0xD, 0xA, 0
+krnCallTable dw ReadSector, WriteSector, StringLength, PrintString, PrintChar
+dw PrintByteHex, PrintHex, PrintNewLine, UInt2Str, Int2Str
+dw PrintUInt, PrintInt, GetCursorPos, EmptyCall, SetCursorPos
+dw SetCursorPosXY, GetCursorAttribute, SetCursorAttribute, SetTextColor, GetKey
+dw PrintTitle, ReadString, ReadStringSafe, EmptyCall, EmptyCall
+times 5 dw EmptyCall
+dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
+dw DumpMemory
+krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2
+dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0
+dw 1, 1, 2, 0, 0, 0, 0, 0, 0, 0
+dw 1, 1, 3, 3, 3, 3
+KernelCallCount EQU 36

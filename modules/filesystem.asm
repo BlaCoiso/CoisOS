@@ -46,7 +46,7 @@ _LoadRootDir:
 	mov AX, 0x50
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
-	push 400	;Offset: 400 (Root Dir Copy)
+	push 0x400	;Offset: 0x400 (Root Dir Copy)
 	push 2		;Read 2 Sectors
 	mov AX, [FS:0x213]
 	add AX, [FS:0x21C]
@@ -64,7 +64,7 @@ _WriteRootDir:
 	mov AX, 0x50
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
-	push 400	;Offset: 400 (Root Dir Copy)
+	push 0x400	;Offset: 0x400 (Root Dir Copy)
 	push 2		;Write 2 Sectors
 	mov AX, [FS:0x213]
 	add AX, [FS:0x21C]
@@ -152,9 +152,10 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 _Get8_3Name: ;[BP+4] = Filename pointer
 	push BP
 	mov BP, SP
-	sub SP, 2 ;Reserve space for local vars
+	sub SP, 3 ;Reserve space for local vars
 	mov BYTE [BP-2], 0	;[BP-2] = Before Dot Count
 	mov BYTE [BP-3], 0	;[BP-3] = After Dot Count
+	mov BYTE [BP-4], 0	;[BP-4] = Dot Ready
 	push SI ;Save registers
 	push DI
 	push ES
@@ -226,6 +227,7 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	je .charLoop ;Dots aren't allowed in the first character
 	cmp BYTE [BP-3], 0
 	jne .charLoop ;Dots aren't allowed in the extension
+	mov BYTE [BP-4], 0xFF
 .padLoop:
 	cmp BYTE [BP-2], 8
 	je .charLoop
@@ -236,11 +238,11 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 .writeChr:
 	cmp BYTE [BP-2], 8
 	jb .writeBefore
-	cmp BYTE [BP-3], 0
-	je .charLoop ;Ignore everything until a dot
+	test BYTE [BP-4], 0xFF
+	jz .charLoop ;Ignore everything until a dot
 	cmp BYTE [BP-3], 3
 	jb .writeAfter
-	jmp .end ;No more space available, ignore remaining characters
+	jmp .padEnd ;No more space available, ignore remaining characters
 .writeBefore:
 	stosb
 	inc BYTE [BP-2]
@@ -276,17 +278,17 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 _GetNextCluster: ;int _GetNextCluster(int cluster)
 	push BP
 	mov BP, SP
-	push FS
+	push ES
 	push BX
 	mov AX, 0x900
-	mov FS, AX
+	mov ES, AX
 	mov BX, [BP+4]
 	shl BX, 1	;Each cluster is 2 bytes
 	;TODO: Get the right FAT offset, load it, recalculate offset
 	;FIXME: This code will FAIL with cluster number > 512
-	mov AX, [FS:BX]
+	mov AX, [ES:BX]
 	pop BX
-	pop FS
+	pop ES
 	mov SP, BP
 	pop BP
 	ret 2
@@ -296,16 +298,21 @@ _LoadCluster:	;int _LoadCluster(int cluster, void* buffer, int segment)
 	mov BP, SP
 	sub SP, 2	;[BP-2] - Sectors per cluster
 	push FS
-	mov AX, 0x50
 	mov AX, [BP+8]
 	push AX
 	mov AX, [BP+6]
 	push AX
+	mov AX, 0x50
 	mov FS, AX	;Load System segment
-	mov AX, [FS:0xD]	;Load sectors per cluster
+	mov AL, [FS:0xD]	;Load sectors per cluster
+	xor AH, AH
 	mov [BP-2], AX
 	push AX
-	mov AX, [FS:0x217]	;Load File Data offset
+	mov AX, [BP+4]		;Load cluster number
+	sub AX, 2		;First 2 clusters aren't "real"
+	mov CX, [BP-2]
+	mul CL			;Get cluster data offset
+	add AX, [FS:0x217]	;Load File Data offset
 	push AX
 	call ReadSector
 	mov AX, [BP-2]
@@ -369,7 +376,7 @@ ReadFileEntry: ;int ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
 	mov AX, [ES:SI+0x1A];Load cluster number
 	mov [BP-2], AX
 .loadLoop:
-	cmp AX, 0xFFF8
+	cmp AX, 0xFFF0
 	jae .loadEnd
 	mov AX, [BP+8]
 	push AX
@@ -385,6 +392,7 @@ ReadFileEntry: ;int ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
 	mov AX, [BP-2]
 	jmp .loadLoop
 .loadEnd:
+	xor AX, AX
 	pop SI
 	pop ES
 	mov SP, BP

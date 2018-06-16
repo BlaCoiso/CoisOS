@@ -8,6 +8,11 @@
             "name": "system.krn",
             "path": "kernel.bin",
             "flags": 5
+        },
+        {
+            "name": "test.bin",
+            "path": "test.bin",
+            "flags": 0
         }
     ]
 }

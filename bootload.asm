@@ -53,8 +53,7 @@ main:
 	mov [Disk_SectorsHead], CL	;Save sectors per head
 	inc DH
 	mov [Disk_HeadCount], DH	;Save heads per cylinder
-	mov AX, 0x70	;SDA Segment
-	mov FS, AX
+	mov BYTE [0x210], 0
 	mov AH, 0x41
 	mov DL, [DriveNumber]
 	mov BX, 0x55AA
@@ -64,30 +63,30 @@ main:
 	test CX, 1
 	jz .noExt
 	;If all checks passed, then we have access to disk extensions
-	mov BYTE [FS:0x10], 0xFF	;Set extensions available byte
+	mov BYTE [0x210], 0xFF	;Set extensions available byte
 	mov WORD [EXT_DiskPack], 16	;Set up disk packet length
 .noExt:
 	mov BX, [ReservedSectors]
-	mov [FS:0x11], BX	;FAT Offset is the same as reserved sectors
+	mov [0x211], BX	;FAT Offset is the same as reserved sectors
 	mov AX, [FATSectors]
 	mov CL, [FATCount]
 	mul CX			;Root Dir starts after FAT Size*FAT Count
 	add AX, BX
-	mov [FS:0x13], AX
+	mov [0x213], AX
 	mov BX, [RootEntryCount]
 	shr BX, 4		;Each entry is 32 bytes long, 512/32=16, optimization for BX/=16
-	mov [FS:0x15], BX
+	mov [0x215], BX
 	add AX, BX		;Add the Root Dir offset to its size
-	mov [FS:0x17], AX
+	mov [0x217], AX
 	;Now the values required to load a file are ready
 	mov AX, 0x900	;FAT Copy Offset
 	mov ES, AX
 	xor BX, BX
 	mov CX, 2
-	mov AX, [FS:0x11]
+	mov AX, [0x211]
 	call readSectors;Load 2 sectors from the FAT
 	mov BX, 0x400
-	mov AX, [FS:0x13]
+	mov AX, [0x213]
 	call readSectors;Load 2 sectors from the Root Dir
 	;Now we're ready to find the file and load it
 .findFileLoop: ;BX is file offset (in the root dir)
@@ -114,7 +113,7 @@ main:
 	sub AX, 2	;first 2 clusters aren't "real"
 	mov CL, [SectorsCluster]
 	mul CX		;AX = Cluster data offset
-	add AX, [FS:0x17];Now AX contains the sector number
+	add AX, [0x217];Now AX contains the sector number
 	mov BX, 0x7C0
 	mov ES, BX	;Set buffer segment to 07C0 (0x7C00)
 	mov BX, DI	;Set offset pointer
@@ -152,7 +151,7 @@ diskErrorFatal:
 
 readSectors: ;reads CX sectors starting at AX into ES:BX
 	push DX
-	test BYTE [FS:0x10], 0xFF
+	test BYTE [0x210], 0xFF
 	jz readSectorsCHS	;Extensions not supported, use CHS
 readSectorsLBA:
 	call setLBA
@@ -229,7 +228,7 @@ reboot: ;tells the BIOS to reboot the system
 ;DATA
 ErrStr db 'Disk Error', 0
 KernelName db 'SYSTEM  KRN', 0
-KernelErr db 'No Kernel',0
+KernelErr db 'Kernel not Found',0
 DiskErrCount db 10
 
 times 510-($-$$) db 0 ;Add padding to fill sector

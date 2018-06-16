@@ -171,6 +171,9 @@ _DiskError:
 	push DS
 	mov AX, 0x7C0	;Load kernel data segment
 	mov DS, AX
+	mov AH, 1
+	int 0x13	;Get Error Number
+	push AX		;Save Error Number
 	xor AX, AX
 	mov DL, [FS:0x24]
 	clc
@@ -178,9 +181,8 @@ _DiskError:
 	jc .fatal	;Drive failed to reset
 	push DiskErrStr1
 	call PrintString
-	mov AH, 1
-	int 0x13	;Get Error Number
-	push AX		;Save Error Number
+	pop AX
+	push AX
 	mov AL, AH
 	xor AH, AH
 	push DiskErrVal
@@ -216,6 +218,7 @@ _DiskError:
 	xor BH, BH
 	shl BL, 1
 	add BX, DErrList;Get pointer to error string
+	mov BX, [BX]
 	push BX
 	call PrintString
 	pop BX			;Restore BX
@@ -243,6 +246,7 @@ _DiskError:
 .errdone:
 	call PrintString
 .errdone2:
+	call PrintNewLine
 	dec BYTE [DiskAttempts]
 	jz .fatal
 	pop DS
@@ -255,7 +259,7 @@ _DiskError:
 
 ;Data
 SECTION .data
-DiskAttempts db 10
+DiskAttempts db 8
 DiskErrStr1 db 'Disk Error (', 0
 DiskErrStr2 db '): ', 0
 DiskErrStrF db 'FATAL DISK ERROR, HALTING', 0

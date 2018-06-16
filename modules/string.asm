@@ -215,7 +215,7 @@ SetCursorPosXY: ;void SetCursorPos(int x, int y)
 	pop BP
 	ret 4
 
-SetCursorAttr: ;void SetCursorAttr(int attr)
+SetCursorAttribute: ;void SetCursorAttribute(int attr)
 	push BP
 	mov BP, SP
 	push BX
@@ -245,7 +245,7 @@ SetTextColor: ;void SetTextColor(int color)
 	and AL, 0xF
 	or AL, [BP-2]
 	push AX
-	call SetCursorAttr
+	call SetCursorAttribute
 	mov SP, BP
 	pop BP
 	ret 2
@@ -267,6 +267,7 @@ GetKey: ;int GetKey()
 	mov BP, SP
 	xor AX, AX
 	int 0x16
+	;TODO: Add keyboard mappings for different layouts
 	mov SP, BP
 	pop BP
 	ret
@@ -406,6 +407,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	cmp AL, 126
 	ja .keyLoop
 	call .addChar
+	;TODO: Add something that allows an external key handler
 	jmp .keyLoop
 .backspace:
 	cmp DI, [BP+4]
