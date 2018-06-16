@@ -25,10 +25,10 @@ OS_PreInit:
 	call _InitIVT
 OS_Init:
 	push InitStr
-	call PrintString;PrintString(InitStr)
+	call PrintString	;PrintString(InitStr)
 	call DumpRegisters
 	push TestStr
-	call PrintString;PrintString(TestStr)
+	call PrintString	;PrintString(TestStr)
 	push 0x9C0
 	push 0
 	push TestFname
@@ -59,12 +59,12 @@ OS_Init:
 
 Reboot:
 	xor AX, AX
-	int 0x16 ;Wait for key
+	int 0x16	;Wait for key
 	xor AX, AX
-	int 0x19 ;Ask BIOS to reboot
+	int 0x19	;Ask BIOS to reboot
 	hlt
 
-KernelCall: ;System call wrapper for far->near calls
+KernelCall:	;System call wrapper for far->near calls
 	;[BP]: Previous frame pointer
 	;[BP+2]: Return address
 	;[BP+4]: Return segment
@@ -77,16 +77,16 @@ KernelCall: ;System call wrapper for far->near calls
 	mov CX, 2
 	mov BX, [BP+6]
 	cmp BX, KernelCallCount
-	jge .end		;Invalid call
+	jge .end	;Invalid call
 	push DS	;BP-4
-	shl BX, 1		;Each call needs a word
+	shl BX, 1	;Each call needs a word
 	mov AX, 0x7C0	;Load kernel segment
 	mov DS, AX
 	mov AX, [krnCallTable+BX]	;Load call pointer
 	mov CX, [krnCallArgs+BX]	;Load call args
-	push SI ;BP-6
+	push SI	;BP-6
 	xor SI, SI
-	sub SP, CX		;Allocate space for arguments
+	sub SP, CX	;Allocate space for arguments
 	sub SP, CX
 .argLoop:
 	test CX, CX

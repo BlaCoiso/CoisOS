@@ -4,12 +4,12 @@ SECTION .text
 StringLength: ;returns the length in AX of the C string at DS:[BP+4] (first arg)
 	push BP
 	mov BP, SP
-	push DI ;saves DI into BP-2
-	push CX ;saves CX into BP-4
-	push ES ;saves ES into BP-6
+	push DI	;saves DI into BP-2
+	push CX	;saves CX into BP-4
+	push ES	;saves ES into BP-6
 	mov AX, DS
 	mov ES, AX
-	mov DI, [BP+4] ;loads first argument
+	mov DI, [BP+4]	;loads first argument
 	xor AX, AX
 	mov CX, 0xFFFF
 	repnz scasb
@@ -21,7 +21,7 @@ StringLength: ;returns the length in AX of the C string at DS:[BP+4] (first arg)
 	pop DI
 	mov SP, BP
 	pop BP
-	ret 2 ;removes arg from stack (2 bytes)
+	ret 2	;removes arg from stack (2 bytes)
 	
 PrintString: ;prints the string at DS:[BP+4] (first arg)
 	push BP
@@ -35,7 +35,7 @@ PrintString: ;prints the string at DS:[BP+4] (first arg)
 	call _PrintChar
 	jmp .loop
 .end:
-	mov AX, SI ;return address of end of string
+	mov AX, SI	;return address of end of string
 	pop SI
 	mov SP, BP
 	pop BP
@@ -45,7 +45,7 @@ _PrintChar:
 	push BP
 	mov AH, 0xE
 	int 0x10
-	pop BP ;Some VBIOSes have a bug that destroys BP
+	pop BP	;Some VBIOSes have a bug that destroys BP
 	ret
 
 PrintChar:
@@ -57,7 +57,7 @@ PrintChar:
 	pop BP
 	ret 2
 
-_PrintByteHex: ;Prints the byte in AL in hex
+_PrintByteHex:	;Prints the byte in AL in hex
 	push AX
 	shr AL, 4
 	call _PrintHexChar
@@ -112,10 +112,10 @@ UInt2Str: ;int UInt2Str(int value, char* buffer)
 	;[BP+6]:Buffer
 	push BP
 	mov BP, SP
-	push ES ;[BP-2]
-	push DI ;[BP-4]
-	push BX ;[BP-6]
-	sub SP, 2;[BP-8] - temp char count
+	push ES	;[BP-2]
+	push DI	;[BP-4]
+	push BX	;[BP-6]
+	sub SP, 2	;[BP-8] - temp char count
 	mov AX, DS
 	mov ES, AX
 	mov DI, [BP+6]
@@ -129,7 +129,7 @@ UInt2Str: ;int UInt2Str(int value, char* buffer)
 	inc CX
 	test AX, AX
 	jnz .chrLoop
-	mov [BP-8], CX ;Save char count
+	mov [BP-8], CX	;Save char count
 .storeLoop:
 	pop AX
 	dec CX
@@ -139,8 +139,8 @@ UInt2Str: ;int UInt2Str(int value, char* buffer)
 	jnz .storeLoop
 
 	xor AX, AX
-	stosb ;Save null byte at end
-	pop AX ;Load and return char count
+	stosb	;Save null byte at end
+	pop AX	;Load and return char count
 	pop BX
 	pop DI
 	pop ES
@@ -156,13 +156,13 @@ Int2Str:
 	mov AX, DS
 	mov ES, AX
 	mov DI, [BP+6]
-	cmp WORD [BP+4], 0 ;Check if we need to print the sign
+	cmp WORD [BP+4], 0	;Check if we need to print the sign
 	jge .skipSign
 	stosb
 	mov AX, '-'
 	pop DI
 	mov AX, [BP+4]
-	neg AX ;remove sign
+	neg AX	;remove sign
 	mov [BP+4], AX
 .skipSign:
 	mov AX, [BP+6]
@@ -203,9 +203,9 @@ SetCursorPos: ;void SetCursorPos(int pos)
 SetCursorPosXY: ;void SetCursorPos(int x, int y)
 	push BP
 	mov BP, SP
-	mov AX, [BP+4] ;x pos
+	mov AX, [BP+4]	;x pos
 	mov DL, AL
-	mov AX, [BP+6] ;y pos
+	mov AX, [BP+6]	;y pos
 	mov DH, AL
 	mov AH, 2
 	push BP
@@ -366,14 +366,14 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	;[BP+4] - Buffer pointer
 	push BP
 	mov BP, SP
-	sub SP, 6		;Reserve space for local variables
+	sub SP, 5	;Reserve space for local variables
 	;[BP-2] - Character count
 	;[BP-4] - Cursor pos
-	mov WORD [BP-6], 0	;Insert Mode
+	mov BYTE [BP-5], 0	;Insert Mode
 	push ES
 	push DI
 	mov AX, DS
-	mov ES, AX		;Load DS into ES
+	mov ES, AX	;Load DS into ES
 	mov DI, [BP+4]	;Load buffer pointer
 	call GetCursorPos
 	mov [BP-4], AX	;Store cursor position
@@ -442,7 +442,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	call .updateCursor
 	jmp .keyLoop
 .toggleIns:
-	not BYTE [BP-6]
+	not BYTE [BP-5]
 	jmp .keyLoop
 .done:
 	mov AX, [BP-4]
@@ -456,7 +456,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	pop BP
 	ret 4
 .addChar:
-	test BYTE [BP-6], 0xFF
+	test BYTE [BP-5], 0xFF
 	jnz .charInsert
 	mov CX, DI
 	sub CX, [BP+4]	;Get current character count
@@ -525,10 +525,10 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	mov CX, [BP-2]	;Load character count
 	push DI
 	xor AL, AL
-	repnz scasb		;Seek to the end of the buffer
+	repnz scasb	;Seek to the end of the buffer
 	mov AX, [BP-2]
 	sub AX, CX
-	mov CX, AX		;Load character count after cursor
+	mov CX, AX	;Load character count after cursor
 .shiftLoopR:
 	test CX, CX
 	jz .shiftEnd
@@ -555,7 +555,7 @@ ReadString: ;void ReadString(char* buffer)
 	pop BP
 	ret
 
-_ChrToUppercase: ;Converts character in AL to uppercase
+_ChrToUppercase:	;Converts character in AL to uppercase
 	cmp AL, 'a'
 	jb .skip
 	cmp AL, 'z'

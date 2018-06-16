@@ -8,11 +8,11 @@ _LoadFAT:
 	mov AX, 0x50
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
-	push 0		;Offset: 0
-	push 2		;Read 2 Sectors
+	push 0	;Offset: 0
+	push 2	;Read 2 Sectors
 	mov AX, [FS:0x211]
 	add AX, [FS:0x21A]
-	push AX		;Sector Start
+	push AX	;Sector Start
 	call ReadSector
 	pop FS
 	mov SP, BP
@@ -26,11 +26,11 @@ _WriteFAT:
 	mov AX, 0x50
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
-	push 0		;Offset: 0
-	push 2		;Write 2 Sectors
+	push 0	;Offset: 0
+	push 2	;Write 2 Sectors
 	mov AX, [FS:0x211]
 	add AX, [FS:0x21A]
-	push AX		;Sector Start
+	push AX	;Sector Start
 	call WriteSector
 	pop FS
 	mov SP, BP
@@ -47,10 +47,10 @@ _LoadRootDir:
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
 	push 0x400	;Offset: 0x400 (Root Dir Copy)
-	push 2		;Read 2 Sectors
+	push 2	;Read 2 Sectors
 	mov AX, [FS:0x213]
 	add AX, [FS:0x21C]
-	push AX		;Sector Start
+	push AX	;Sector Start
 	call ReadSector
 	pop FS
 	mov SP, BP
@@ -65,10 +65,10 @@ _WriteRootDir:
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
 	push 0x400	;Offset: 0x400 (Root Dir Copy)
-	push 2		;Write 2 Sectors
+	push 2	;Write 2 Sectors
 	mov AX, [FS:0x213]
 	add AX, [FS:0x21C]
-	push AX		;Sector Start
+	push AX	;Sector Start
 	call WriteSector
 	pop FS
 	mov SP, BP
@@ -80,11 +80,11 @@ FindFile: ;int FindFile(char* filename)
 	push BP
 	mov BP, SP
 	push DS
-	mov AX, [BP+4] ;Load filename pointer
+	mov AX, [BP+4]	;Load filename pointer
 	push AX
-	call _Get8_3Name ;Get 8.3 name
+	call _Get8_3Name	;Get 8.3 name
 	mov AX, 0x7C0
-	mov DS, AX ;Load kernel segment
+	mov DS, AX	;Load kernel segment
 	push _8_3NameBuf
 	call FindFile8_3
 	pop DS
@@ -96,16 +96,16 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	;Filename is in DS
 	push BP
 	mov BP, SP
-	sub SP, 2		;Reserve space for local vars
+	sub SP, 2	;Reserve space for local vars
 	;[BP-2] - Current entry
 	push ES
 	push FS
 	push DI
 	push SI
 	mov AX, 0x70
-	mov FS, AX		;Load SDA
+	mov FS, AX	;Load SDA
 	mov AX, 0x940
-	mov ES, AX		;Set FAT Root Dir Segment
+	mov ES, AX	;Set FAT Root Dir Segment
 	cmp WORD [FS:0x1C], 0
 	je .skipLoad	;First sector already loaded, saves some time and I/O
 	mov WORD [FS:0x1C], 0
@@ -118,15 +118,15 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	mov DI, [BP-2]
 	mov AL, [ES:DI]
 	test AL, AL
-	jz .fail		;End marker: no more entries after this
+	jz .fail	;End marker: no more entries after this
 	cmp AL, 0xE5	;Deleted entry
 	je .skip
-	test BYTE [ES:DI+0xB], 	24	;Check special attributes
+	test BYTE [ES:DI+0xB], 24	;Check special attributes
 	jnz .skip
-	mov CX, 11		;8+3
+	mov CX, 11	;8+3
 	repe cmpsb
 	test CX, CX
-	jnz .skip		;Filename didn't match
+	jnz .skip	;Filename didn't match
 	mov AX, [BP-2]
 	jmp .end
 .skip:
@@ -152,11 +152,11 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 _Get8_3Name: ;[BP+4] = Filename pointer
 	push BP
 	mov BP, SP
-	sub SP, 3 ;Reserve space for local vars
+	sub SP, 3	;Reserve space for local vars
 	mov BYTE [BP-2], 0	;[BP-2] = Before Dot Count
 	mov BYTE [BP-3], 0	;[BP-3] = After Dot Count
 	mov BYTE [BP-4], 0	;[BP-4] = Dot Ready
-	push SI ;Save registers
+	push SI	;Save registers
 	push DI
 	push ES
 	mov AX, 0x7C0
@@ -181,7 +181,7 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	ja .notDigit
 	;AL is a digit, write it
 	jmp .writeChr
-.notDigit: ;Check for special characters
+.notDigit:	;Check for special characters
 	test AL, AL
 	jz .end
 	cmp AL, ' '
@@ -220,13 +220,13 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	jmp .charLoop
 .space:
 	cmp BYTE [BP-2], 0
-	je .charLoop ;Don't allow space on beginning
+	je .charLoop	;Don't allow space on beginning
 	jmp .writeChr
 .dot:
 	cmp BYTE [BP-2], 0
-	je .charLoop ;Dots aren't allowed in the first character
+	je .charLoop	;Dots aren't allowed in the first character
 	cmp BYTE [BP-3], 0
-	jne .charLoop ;Dots aren't allowed in the extension
+	jne .charLoop	;Dots aren't allowed in the extension
 	mov BYTE [BP-4], 0xFF
 .padLoop:
 	cmp BYTE [BP-2], 8
@@ -239,10 +239,10 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	cmp BYTE [BP-2], 8
 	jb .writeBefore
 	test BYTE [BP-4], 0xFF
-	jz .charLoop ;Ignore everything until a dot
+	jz .charLoop	;Ignore everything until a dot
 	cmp BYTE [BP-3], 3
 	jb .writeAfter
-	jmp .padEnd ;No more space available, ignore remaining characters
+	jmp .padEnd	;No more space available, ignore remaining characters
 .writeBefore:
 	stosb
 	inc BYTE [BP-2]
@@ -267,7 +267,7 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	jmp .padDot
 .padEnd:
 	xor AL, AL
-	stosb ;End with null byte
+	stosb	;End with null byte
 	pop ES
 	pop DI
 	pop SI
@@ -308,10 +308,10 @@ _LoadCluster:	;int _LoadCluster(int cluster, void* buffer, int segment)
 	xor AH, AH
 	mov [BP-2], AX
 	push AX
-	mov AX, [BP+4]		;Load cluster number
-	sub AX, 2		;First 2 clusters aren't "real"
+	mov AX, [BP+4]	;Load cluster number
+	sub AX, 2	;First 2 clusters aren't "real"
 	mov CX, [BP-2]
-	mul CL			;Get cluster data offset
+	mul CL	;Get cluster data offset
 	add AX, [FS:0x217]	;Load File Data offset
 	push AX
 	call ReadSector
@@ -373,7 +373,7 @@ ReadFileEntry: ;int ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
 	mov ES, AX	;Load FAT Data segment
 	mov SI, [BP+4]
 	add SI, 0x400	;Load file entry
-	mov AX, [ES:SI+0x1A];Load cluster number
+	mov AX, [ES:SI+0x1A]	;Load cluster number
 	mov [BP-2], AX
 .loadLoop:
 	cmp AX, 0xFFF0

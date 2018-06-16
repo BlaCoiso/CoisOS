@@ -27,7 +27,7 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	push AX
 	call PrintHex
 	mov AX, [BP+6]
-	mov DS, AX		;Load data segment
+	mov DS, AX	;Load data segment
 	mov SI, [BP+4]	;Load address
 	mov CX, [BP+8]	;Load count
 	xor DX, DX
@@ -86,7 +86,7 @@ DumpRegisters: ;void DumpRegisters()
 	push BP
 	mov BP, SP
 	mov AX, 0x7C0
-	mov DS, AX ;Load kernel DS for strings
+	mov DS, AX	;Load kernel DS for strings
 	call PrintNewLine
 	push _RegStr
 	call PrintTitle
@@ -106,27 +106,27 @@ DumpRegisters: ;void DumpRegisters()
 	mov BL, 13
 	call .printRegister
 	call PrintNewLine
-	mov AX, CS		;Load CS
+	mov AX, CS	;Load CS
 	mov BL, 4
 	call .printRegister
 	mov AX, [BP+20]	;Load DS
 	mov BL, 5
 	call .printRegister
-	mov AX, ES		;Load ES
+	mov AX, ES	;Load ES
 	mov BL, 6
 	call .printRegister
-	mov AX, FS		;Load FS
+	mov AX, FS	;Load FS
 	mov BL, 7
 	call .printRegister
 	mov AX, [BP+4]	;Load DI
 	mov BL, 12
 	call .printRegister
 	call PrintNewLine
-	mov AX, SS		;Load SS
+	mov AX, SS	;Load SS
 	mov BL, 8
 	call .printRegister
 	mov AX, [BP+10]	;Load SP
-	add AX, 4		;DS and return addr was added to the stack before saving SP
+	add AX, 4	;DS and return addr was added to the stack before saving SP
 	mov BL, 10
 	call .printRegister
 	mov AX, [BP+8]	;Load BP
@@ -195,7 +195,7 @@ DumpRegisters: ;void DumpRegisters()
 	ret
 .printRegister: ;value in AX, number in BX
 	xor BH, BH
-	shl BX, 2 ;Each string is 4 bytes
+	shl BX, 2	;Each string is 4 bytes
 	add BX, _RegNames
 	push AX
 	push BX

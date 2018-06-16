@@ -21,11 +21,11 @@ ReadSector:;void ReadSector(int sector, int count, void* buffer, int segment)
 	mov AX, DS
 .noDS:
 	mov ES, AX
-	mov BX, [BP+8]		;Load Buffer Pointer
-	mov CX, [BP+6]		;Load Sector Count 
-	mov AX, [BP+4]		;Load Sector Offset
+	mov BX, [BP+8]	;Load Buffer Pointer
+	mov CX, [BP+6]	;Load Sector Count 
+	mov AX, [BP+4]	;Load Sector Offset
 	mov DL, [FS:0x24]	;Load Drive Number
-	test BYTE [FS:0x210], 0xFF ;Check LBA Support
+	test BYTE [FS:0x210], 0xFF	;Check LBA Support
 	jz .noLBA
 	call _ReadSectorLBA
 	jmp .end
@@ -60,7 +60,7 @@ _ReadSectorLBA:
 
 _ReadSectorCHS:
 	call _SetCHS
-	mov AH, 2 ;Read sectors
+	mov AH, 2	;Read sectors
 .retry:
 	push AX
 	push DX
@@ -91,11 +91,11 @@ WriteSector:;void WriteSector(int sector, int count, void* buffer, int segment)
 	mov FS, AX
 	mov AX, [BP+0xA]	;Load Buffer Segment
 	mov ES, AX
-	mov BX, [BP+8]		;Load Buffer Pointer
-	mov CX, [BP+6]		;Load Sector Count 
-	mov AX, [BP+4]		;Load Sector Offset
+	mov BX, [BP+8]	;Load Buffer Pointer
+	mov CX, [BP+6]	;Load Sector Count 
+	mov AX, [BP+4]	;Load Sector Offset
 	mov DL, [FS:0x24]	;Load Drive Number
-	test BYTE [FS:0x210], 0xFF ;Check LBA Support
+	test BYTE [FS:0x210], 0xFF	;Check LBA Support
 	jz .noLBA
 	call _WriteSectorLBA
 	jmp .end
@@ -130,7 +130,7 @@ _WriteSectorLBA:
 
 _WriteSectorCHS:
 	call _SetCHS
-	mov AH, 3 ;Write sectors
+	mov AH, 3	;Write sectors
 .retry:
 	push AX
 	push DX
@@ -147,16 +147,16 @@ _WriteSectorCHS:
 
 _SetCHS:
 	push BX
-	div BYTE [FS:0x18] ;Get the sector number, AH=sector number
-	inc AH ;first sector is 1
-	mov BX, AX ;Store it temporarily
+	div BYTE [FS:0x18]	;Get the sector number, AH=sector number
+	inc AH	;first sector is 1
+	mov BX, AX	;Store it temporarily
 	xor AH, AH
-	div BYTE [FS:0x1A] ;Get the head number, AH=head number, AL=cylinder
-	mov CH, AL ;Load cylinder number
-	mov AL, CL ;Load sector count
-	mov CL, BH ;Load sector start
-	mov DH, AH ;Load head number
-	pop BX ;Restore buffer pointer
+	div BYTE [FS:0x1A]	;Get the head number, AH=head number, AL=cylinder
+	mov CH, AL	;Load cylinder number
+	mov AL, CL	;Load sector count
+	mov CL, BH	;Load sector start
+	mov DH, AH	;Load head number
+	pop BX	;Restore buffer pointer
 	ret
 
 _SetLBA:
@@ -167,13 +167,13 @@ _SetLBA:
 	ret
 
 _DiskError:
-	push AX		;Save AX because it contains call args
+	push AX	;Save AX because it contains call args
 	push DS
 	mov AX, 0x7C0	;Load kernel data segment
 	mov DS, AX
 	mov AH, 1
 	int 0x13	;Get Error Number
-	push AX		;Save Error Number
+	push AX	;Save Error Number
 	xor AX, AX
 	mov DL, [FS:0x24]
 	clc
@@ -192,7 +192,7 @@ _DiskError:
 	call PrintString
 	push DiskErrStr2
 	call PrintString
-	pop AX		;Restore Error Number
+	pop AX	;Restore Error Number
 	cmp AH, 0xD
 	jb .err1
 	cmp AH, 0x10
@@ -213,15 +213,15 @@ _DiskError:
 	jmp .errdone
 .err1:
 	dec AH
-	push BX			;Save value of BX
+	push BX	;Save value of BX
 	mov BL, AH
 	xor BH, BH
 	shl BL, 1
-	add BX, DErrList;Get pointer to error string
+	add BX, DErrList	;Get pointer to error string
 	mov BX, [BX]
 	push BX
 	call PrintString
-	pop BX			;Restore BX
+	pop BX	;Restore BX
 	jmp .errdone2
 .err2:
 	push DErr10
