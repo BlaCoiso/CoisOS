@@ -158,8 +158,9 @@ Int2Str:
 	mov DI, [BP+6]
 	cmp WORD [BP+4], 0	;Check if we need to print the sign
 	jge .skipSign
-	stosb
 	mov AX, '-'
+	stosb
+	inc WORD [BP+6]
 	pop DI
 	mov AX, [BP+4]
 	neg AX	;remove sign
@@ -366,10 +367,10 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	;[BP+4] - Buffer pointer
 	push BP
 	mov BP, SP
-	sub SP, 5	;Reserve space for local variables
+	sub SP, 6	;Reserve space for local variables
 	;[BP-2] - Character count
 	;[BP-4] - Cursor pos
-	mov BYTE [BP-5], 0	;Insert Mode
+	mov BYTE [BP-6], 0	;Insert Mode
 	push ES
 	push DI
 	mov AX, DS
@@ -442,7 +443,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	call .updateCursor
 	jmp .keyLoop
 .toggleIns:
-	not BYTE [BP-5]
+	not BYTE [BP-6]
 	jmp .keyLoop
 .done:
 	mov AX, [BP-4]
@@ -456,7 +457,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	pop BP
 	ret 4
 .addChar:
-	test BYTE [BP-5], 0xFF
+	test BYTE [BP-6], 0xFF
 	jnz .charInsert
 	mov CX, DI
 	sub CX, [BP+4]	;Get current character count
@@ -479,12 +480,18 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 .charInsert:
 	mov [DI], AL
 	inc DI
+	mov AX, [BP+4]
+	add AX, [BP-2]
+	cmp DI, AX
+	jbe .skipInc
+	inc WORD [BP-2]
+.skipInc:
 	mov CX, [BP+4]
 	add CX, [BP+6]
 	cmp DI, CX
 	jb .insertOK
 	mov DI, CX
-	mov BYTE [DI], 0
+	mov BYTE [DI], 0	;Make sure there's nothing after the end
 .insertOK:
 	call .updateBuffer
 	ret
@@ -493,11 +500,16 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	mov CX, DI
 	sub CX, [BP+4]	;Get current character count
 	mov AX, [BP-4]
-	mov AL, CL
+	add AL, CL
 	push AX
 	call SetCursorPos
 	ret
 .updateBuffer:
+	push DI
+	mov DI, [BP+4]
+	add DI, [BP-2]
+	mov BYTE [DI], 0	;End buffer after all characters
+	pop DI
 	mov AX, [BP-4]
 	push AX
 	call SetCursorPos

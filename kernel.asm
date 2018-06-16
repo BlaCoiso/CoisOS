@@ -33,8 +33,8 @@ OS_Init:
 	push 0
 	push TestFname
 	call ReadFile
-	cmp AX, 0xFFFF
-	jne .ReadOK
+	test AX, AX
+	jz .ReadOK
 	push ReadFailStr
 	call PrintString
 	jmp Reboot
@@ -85,21 +85,25 @@ KernelCall:	;System call wrapper for far->near calls
 	mov AX, [krnCallTable+BX]	;Load call pointer
 	mov CX, [krnCallArgs+BX]	;Load call args
 	push SI	;BP-6
+	push DI	;BP-8
 	xor SI, SI
 	sub SP, CX	;Allocate space for arguments
 	sub SP, CX
+	mov DI, SP
 .argLoop:
 	test CX, CX
 	jz .argDone
 	dec CX
 	mov DX, [SS:BP+SI+8]
-	mov [SS:BP+SI-8], DX	;Load argument
+	mov [SS:DI], DX	;Load argument
 	add SI, 2
+	add DI, 2
 	jmp .argLoop
 .argDone:
 	mov CX, [BP-4]
 	mov DS, CX	;Restore data segment
 	call AX
+	pop DI
 	pop SI
 	mov CX, 0x7C0
 	mov DS, CX	;Load data segment for call table
@@ -131,12 +135,16 @@ ReadFailStr db 'Failed to find/load test program.', 0xD, 0xA, 0
 TestDoneStr db 'Returned from test program. Press any key to reboot', 0xD, 0xA, 0
 krnCallTable dw ReadSector, WriteSector, StringLength, PrintString, PrintChar
 dw PrintByteHex, PrintHex, PrintNewLine, UInt2Str, Int2Str
+
 dw PrintUInt, PrintInt, GetCursorPos, EmptyCall, SetCursorPos
 dw SetCursorPosXY, GetCursorAttribute, SetCursorAttribute, SetTextColor, GetKey
+
 dw PrintTitle, ReadString, ReadStringSafe, EmptyCall, EmptyCall
 times 5 dw EmptyCall
+
 dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
 dw DumpMemory
+
 krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2
 dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0
 dw 1, 1, 2, 0, 0, 0, 0, 0, 0, 0
