@@ -33,20 +33,24 @@ function writeFile(file) {
     else while (fext.length < 3) fext += " ";
     let flags = file.flags || 0;
     let createDate = fstats.birthtime;
-    let cSec = Math.floor(createDate.getUTCSeconds() / 2);
+    let cSec = createDate.getUTCSeconds();
     let cMin = createDate.getUTCMinutes();
     let cHour = createDate.getUTCHours();
     let cYear = createDate.getUTCFullYear() - 1980;
-    let cMon = createDate.getUTCMonth();
-    let cDay = createDate.getUTCDay();
+    let cMon = createDate.getUTCMonth() + 1;
+    let cDay = createDate.getUTCDate();
+    let cTime = (cSec >> 1) | (cMin << 5) | (cHour << 11);
+    let cDate = cDay | (cMon << 5) | (cYear << 9);
 
     let modifyDate = fstats.mtime;
-    let mSec = Math.floor(modifyDate.getUTCSeconds() / 2);
+    let mSec = modifyDate.getUTCSeconds();
     let mMin = modifyDate.getUTCMinutes();
     let mHour = modifyDate.getUTCHours();
     let mYear = modifyDate.getUTCFullYear() - 1980;
-    let mMon = modifyDate.getUTCMonth();
-    let mDay = modifyDate.getUTCDay();
+    let mMon = modifyDate.getUTCMonth() + 1;
+    let mDay = modifyDate.getUTCDate();
+    let mTime = (mSec >> 1) | (mMin << 5) | (mHour << 11);
+    let mDate = mDay | (mMon << 5) | (mYear << 9);
 
     let flen = fstats.size;
     let dirOffset = fileCount * 32;
@@ -57,17 +61,17 @@ function writeFile(file) {
     RootDirBuffer.writeUInt8(flags, dirOffset++);
     RootDirBuffer.writeUInt8(0, dirOffset++);//Reserved
     RootDirBuffer.writeUInt8(0, dirOffset++);//First Char of deleted
-    RootDirBuffer.writeUInt16LE(cSec | (cMin << 5) | (cHour << 11), dirOffset);
+    RootDirBuffer.writeUInt16LE(cTime, dirOffset);
     dirOffset += 2;
-    RootDirBuffer.writeUInt16LE(cDay | (cMon << 5) | (cYear << 9), dirOffset);
+    RootDirBuffer.writeUInt16LE(cDate, dirOffset);
     dirOffset += 2;
     RootDirBuffer.writeUInt16LE(0, dirOffset);//Last Accessed
     dirOffset += 2;
     RootDirBuffer.writeUInt16LE(0, dirOffset);//Reserved
     dirOffset += 2;
-    RootDirBuffer.writeUInt16LE(mSec | (mMin << 5) | (mHour << 11), dirOffset);
+    RootDirBuffer.writeUInt16LE(mTime, dirOffset);
     dirOffset += 2;
-    RootDirBuffer.writeUInt16LE(mDay | (mMon << 5) | (mYear << 9), dirOffset);
+    RootDirBuffer.writeUInt16LE(mDate, dirOffset);
     dirOffset += 2;
     RootDirBuffer.writeUInt16LE(nextFreeCluster, dirOffset);
     dirOffset += 2;
