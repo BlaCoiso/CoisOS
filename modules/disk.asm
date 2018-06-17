@@ -13,7 +13,7 @@ ReadSector:;void ReadSector(int sector, int count, void* buffer, int segment)
 	push ES
 	push FS
 	push BX
-	mov AX, 0x50
+	mov AX, BSEC_SEG
 	mov FS, AX
 	mov AX, [BP+0xA]	;Load Buffer Segment
 	test AX, AX
@@ -44,7 +44,7 @@ _ReadSectorLBA:
 	push SI
 .retry:
 	push DS
-	mov AX, 0x70
+	mov AX, SDA_SEG
 	mov DS, AX
 	mov AH, 0x42
 	xor SI, SI
@@ -87,7 +87,7 @@ WriteSector:;void WriteSector(int sector, int count, void* buffer, int segment)
 	push ES
 	push FS
 	push BX
-	mov AX, 0x50
+	mov AX, BSEC_SEG
 	mov FS, AX
 	mov AX, [BP+0xA]	;Load Buffer Segment
 	mov ES, AX
@@ -114,7 +114,7 @@ _WriteSectorLBA:
 	push SI
 .retry:
 	push DS
-	mov AX, 0x70
+	mov AX, SDA_SEG
 	mov DS, AX	;Load DS with SDA segment
 	mov AH, 0x43
 	xor SI, SI	;Load Disk Access Packet
@@ -169,7 +169,7 @@ _SetLBA:
 _DiskError:
 	push AX	;Save AX because it contains call args
 	push DS
-	mov AX, 0x7C0	;Load kernel data segment
+	mov AX, KRN_SEG	;Load kernel data segment
 	mov DS, AX
 	mov AH, 1
 	int 0x13	;Get Error Number

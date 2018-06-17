@@ -5,7 +5,7 @@ _LoadFAT:
 	push BP
 	mov BP, SP
 	push FS
-	mov AX, 0x50
+	mov AX, BSEC_SEG
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
 	push 0	;Offset: 0
@@ -23,7 +23,7 @@ _WriteFAT:
 	push BP
 	mov BP, SP
 	push FS
-	mov AX, 0x50
+	mov AX, BSEC_SEG
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
 	push 0	;Offset: 0
@@ -43,7 +43,7 @@ _LoadRootDir:
 	push BP
 	mov BP, SP
 	push FS
-	mov AX, 0x50
+	mov AX, BSEC_SEG
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
 	push 0x400	;Offset: 0x400 (Root Dir Copy)
@@ -61,7 +61,7 @@ _WriteRootDir:
 	push BP
 	mov BP, SP
 	push FS
-	mov AX, 0x50
+	mov AX, BSEC_SEG
 	mov FS, AX
 	push 0x900	;FAT Copy Segment
 	push 0x400	;Offset: 0x400 (Root Dir Copy)
@@ -83,7 +83,7 @@ FindFile: ;int FindFile(char* filename)
 	mov AX, [BP+4]	;Load filename pointer
 	push AX
 	call _Get8_3Name	;Get 8.3 name
-	mov AX, 0x7C0
+	mov AX, KRN_SEG
 	mov DS, AX	;Load kernel segment
 	push _8_3NameBuf
 	call FindFile8_3
@@ -102,7 +102,7 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	push FS
 	push DI
 	push SI
-	mov AX, 0x70
+	mov AX, SDA_SEG
 	mov FS, AX	;Load SDA
 	mov AX, 0x940
 	mov ES, AX	;Set FAT Root Dir Segment
@@ -159,7 +159,7 @@ _Get8_3Name: ;[BP+4] = Filename pointer
 	push SI	;Save registers
 	push DI
 	push ES
-	mov AX, 0x7C0
+	mov AX, KRN_SEG
 	mov ES, AX
 	mov DI, _8_3NameBuf
 	mov SI, [BP+4]
@@ -302,7 +302,7 @@ _LoadCluster:	;int _LoadCluster(int cluster, void* buffer, int segment)
 	push AX
 	mov AX, [BP+6]
 	push AX
-	mov AX, 0x50
+	mov AX, BSEC_SEG
 	mov FS, AX	;Load System segment
 	mov AL, [FS:0xD]	;Load sectors per cluster
 	xor AH, AH

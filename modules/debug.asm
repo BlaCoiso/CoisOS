@@ -9,7 +9,7 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	mov BP, SP
 	push DS
 	push SI
-	mov AX, 0x7C0
+	mov AX, KRN_SEG
 	mov DS, AX
 	push _DumpStr1
 	call PrintString
@@ -30,7 +30,7 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	mov DS, AX	;Load data segment
 	mov SI, [BP+4]	;Load address
 	mov CX, [BP+8]	;Load count
-	xor DX, DX
+	xor DX, DX	;Printed count
 .dumpLoop:
 	test CX, CX
 	jz .end
@@ -45,8 +45,12 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	call _PrintChar
 	push SI
 	call PrintHex
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
 	push _4SpaceStr
 	call PrintString
+	pop DS
 	pop CX
 	pop DX
 .skipHeader:
@@ -57,8 +61,12 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	lodsb
 	push AX
 	call PrintByteHex
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
 	push _2SpaceStr
 	call PrintString
+	pop DS
 	pop DX
 	pop CX
 	jmp .dumpLoop

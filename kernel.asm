@@ -3,9 +3,12 @@ SECTION .text
 
 jmp OS_PreInit
 jmp KernelCall	;0x7C0:2
+KRN_SEG EQU 0x7C0
+SDA_SEG EQU 0x70
+BSEC_SEG EQU 0x50
 
 OS_PreInit:
-	mov AX, 0x7C0
+	mov AX, KRN_SEG
 	mov DS, AX
 	mov ES, AX
 	mov SP, 0x7300
@@ -14,7 +17,7 @@ OS_PreInit:
 	xor DX, DX
 	xor SI, SI
 	xor DI, DI
-	mov AX, 0x70
+	mov AX, SDA_SEG
 	mov FS, AX
 	xor AX, AX
 	mov [FS:0x19], AL
@@ -80,7 +83,7 @@ KernelCall:	;System call wrapper for far->near calls
 	jge .end	;Invalid call
 	push DS	;BP-4
 	shl BX, 1	;Each call needs a word
-	mov AX, 0x7C0	;Load kernel segment
+	mov AX, KRN_SEG	;Load kernel segment
 	mov DS, AX
 	mov AX, [krnCallTable+BX]	;Load call pointer
 	mov CX, [krnCallArgs+BX]	;Load call args
@@ -105,7 +108,7 @@ KernelCall:	;System call wrapper for far->near calls
 	call AX
 	pop DI
 	pop SI
-	mov CX, 0x7C0
+	mov CX, KRN_SEG
 	mov DS, CX	;Load data segment for call table
 	mov CX, [krnCallArgs+BX]
 	shl CX, 1

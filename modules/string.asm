@@ -105,7 +105,7 @@ PrintNewLine:
 	call _PrintChar
 	ret
 
-UInt2Str: ;int UInt2Str(int value, char* buffer)
+UInt2Str: ;int UInt2Str(int value, char *buffer)
 	;[BP]:	Last BP
 	;[BP+2]:Return Addr
 	;[BP+4]:Value
@@ -273,7 +273,7 @@ GetKey: ;int GetKey()
 	pop BP
 	ret
 
-PrintTitle: ;void PrintTitle(char* string)
+PrintTitle: ;void PrintTitle(char *string)
 	push BP
 	mov BP, SP
 	sub SP, 4	;Allocate space for local vars
@@ -332,7 +332,7 @@ PrintInt: ;void PrintInt(int value)
 	push BP
 	mov BP, SP
 	push DS
-	mov AX, 0x7C0
+	mov AX, KRN_SEG
 	mov DS, AX
 	push _IntBuf
 	mov AX, [BP+4]
@@ -349,7 +349,7 @@ PrintUInt: ;void PrintUInt(int value)
 	push BP
 	mov BP, SP
 	push DS
-	mov AX, 0x7C0
+	mov AX, KRN_SEG
 	mov DS, AX
 	push _IntBuf
 	mov AX, [BP+4]
@@ -362,7 +362,7 @@ PrintUInt: ;void PrintUInt(int value)
 	pop BP
 	ret 2
 
-ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
+ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	;[BP+6] - Max Length
 	;[BP+4] - Buffer pointer
 	push BP
@@ -556,7 +556,7 @@ ReadStringSafe: ;void ReadStringSafe(char* buffer, int maxLength)
 	pop DI
 	ret
 
-ReadString: ;void ReadString(char* buffer)
+ReadString: ;void ReadString(char *buffer)
 	push BP
 	mov BP, SP
 	mov AX, [BP+4]
@@ -574,7 +574,44 @@ _ChrToUppercase:	;Converts character in AL to uppercase
 	ja .skip
 	sub AL, 32
 .skip: ret
-	
+
+MemoryCopy: ;void MemoryCopy(void *dest, void *source, int length)
+	push BP
+	mov BP, SP
+	push SI
+	push DI
+	mov SI, [BP+6]
+	mov DI, [BP+4]
+	mov CX, [BP+8]	;Load length
+	test CX, 1
+	jz .noOpt
+	shr CX, 1	;Optimization: Move words instead of bytes, executes faster
+	rep movsw
+	jmp .end
+.noOpt:	rep movsb
+.end:
+	pop DI
+	pop SI
+	mov SP, BP
+	pop BP
+	ret 6
+
+StringCopy: ;void StringCopy(char *dest, char *source)
+	push BP
+	mov BP, SP
+	mov AX, [BP+6]	;Load source string pointer
+	push AX
+	call StringLength
+	push AX
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	call MemoryCopy
+	mov SP, BP
+	pop BP
+	ret 4
+
 DrawBox: ;void DrawBox(int x, int y, int width, int height)
 	;TODO
 	ret 8

@@ -12,6 +12,8 @@ void PrintUInt(unsigned int value);
 int Int2Str(signed int value, char *buffer);
 void PrintInt(signed int value);
 void PrintTitle(char *string);
+void MemoryCopy(void *dest, void *source, int length);
+void StringCopy(char *dest, char *source);
 
 int GetCursorPos();
 void SetCursorPos(int pos);
