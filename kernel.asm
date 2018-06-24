@@ -1,4 +1,6 @@
 BITS 16
+;Save map file with symbol addresses when assembling
+[map all kernel.map]
 SECTION .text
 
 jmp OS_PreInit
@@ -23,6 +25,7 @@ OS_PreInit:
 	mov [FS:0x19], AL
 	mov [FS:0x1A], AL
 	mov [FS:0x1C], AL
+	call _InitScreen
 	call _LoadFAT
 	call _LoadRootDir
 	call _InitIVT
