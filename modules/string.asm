@@ -170,6 +170,7 @@ PrintTitle: ;void PrintTitle(char *string)
 	;[BP-4] - Separator length
 	mov AX, [BP+4]	;Load string pointer into AX
 	push AX
+	call DisableCursorUpdate
 	call StringLength
 	mov [BP-2], AX
 	call GetCursorPos
@@ -203,8 +204,10 @@ PrintTitle: ;void PrintTitle(char *string)
 	call PrintString
 	mov AL, '|'
 	call _PrintChar
+	call DisableCursorUpdate
 	mov CX, [BP-4]
 	call .printSep
+	call EnableCursorUpdate
 	mov SP, BP
 	pop BP
 	ret 2

@@ -274,7 +274,6 @@ _CursorCheck:
 	inc BYTE [_CursorY]
 .noChange:
 	mov AL, [_ScreenHeight]
-	dec AL
 	cmp [_CursorY], AL
 	jb .noScroll
 	call _ScreenScroll
@@ -299,6 +298,7 @@ _ScreenScroll:
 	shl SI, 1
 	mov CL, [_ScreenWidth]
 	mov AL, [_ScreenHeight]
+	dec AL
 	mul CL
 	mov CX, AX
 	mov AX, FS
@@ -348,9 +348,34 @@ PrintString: ;prints the string at DS:[BP+4] (first arg)
 	pop BP
 	ret 2
 
+DisableCursorUpdate: ;void DisableCursorUpdate
+	push BP
+	mov BP, SP
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
+	mov BYTE [_UpdateCursor], 0
+	pop DS
+	mov SP, BP
+	pop BP
+	ret
+
+EnableCursorUpdate: ;void EnableCursorUpdate
+	push BP
+	mov BP, SP
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
+	mov BYTE [_UpdateCursor], 0xFF
+	call _UpdateCursorPos
+	pop DS
+	mov SP, BP
+	pop BP
+	ret
+
 SECTION .data
 _UpdateCursor db 0xFF
-_CursorAttribute db 0x07
+_CursorAttribute db 0x0F
 _CursorX db 0
 _CursorY db 0
 _CursorPtr dw 0
