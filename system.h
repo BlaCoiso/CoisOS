@@ -15,17 +15,22 @@ void PrintTitle(char *string);
 void MemoryCopy(void *dest, void *source, int length);
 void StringCopy(char *dest, char *source);
 
+int GetKey();
+void ReadStringSafe(char *buffer, int maxLength);
+void ReadString(char *buffer);
+void DrawBox(int x, int y, int width, int height);
+
+//Screen calls
 int GetCursorPos();
 void SetCursorPos(int pos);
 void SetCursorPosXY(int x, int y);
 void SetCursorAttribute(int attr);
 int GetCursorAttribute();
 void SetTextColor(int color);
-
-int GetKey();
-void ReadStringSafe(char *buffer, int maxLength);
-void ReadString(char *buffer);
-void DrawBox(int x, int y, int width, int height);
+void SetBackgroundColor(int color);
+void DisableCursorUpdate();
+void EnableCursorUpdate();
+void SetScreenPage(int page);
 
 //Filesystem calls
 int FindFile(char *filename);

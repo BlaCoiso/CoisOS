@@ -1,7 +1,7 @@
 KRN_SEG EQU 0x07C0
 _KernelCall EQU 2
 %define KernelCall KRN_SEG:_KernelCall
-KERNEL_API_V EQU 1
+KERNEL_API_V EQU 2
 ReadSector EQU 0
 WriteSector EQU 1
 ;String Calls (v1)
@@ -26,6 +26,12 @@ GetKey EQU 19
 PrintTitle EQU 20
 ReadString EQU 21
 ReadStringSafe EQU 22
+MemoryCopy EQU 23
+StringCopy EQU 24
+SetBackgroundColor EQU 25
+DisableCursorUpdate EQU 26
+EnableCursorUpdate EQU 27
+SetScreenPage EQU 28
 ;Filesystem Calls (v1)
 FindFile EQU 30
 FindFile8_3 EQU 31

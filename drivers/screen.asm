@@ -34,9 +34,12 @@ ReadCursorPos: ;int ReadCursorPos()
 	mov AX, KRN_SEG
 	mov DS, AX
 	mov AH, 3
+	push BX
+	mov BH, [_ScreenPage]
 	push BP
 	int 0x10
 	pop BP
+	pop BX
 	mov [_CursorX], DL
 	mov [_CursorY], DH
 	mov AX, DX
@@ -63,9 +66,12 @@ _UpdateCursorPos:
 	mov DL, [_CursorX]
 	mov DH, [_CursorY]
 	mov AH, 2
+	push BX
+	mov BH, [_ScreenPage]
 	push BP
 	int 0x10
 	pop BP
+	pop BX
 	ret
 
 SetCursorPos: ;void SetCursorPos(int pos)
@@ -78,9 +84,12 @@ SetCursorPos: ;void SetCursorPos(int pos)
 	mov [_CursorX], DL
 	mov [_CursorY], DH
 	mov AH, 2
+	push BX
+	mov BH, [_ScreenPage]
 	push BP
 	int 0x10
 	pop BP
+	pop BX
 	pop DS
 	mov SP, BP
 	pop BP
@@ -99,9 +108,12 @@ SetCursorPosXY: ;void SetCursorPos(int x, int y)
 	mov [_CursorY], AL
 	mov DH, AL
 	mov AH, 2
+	push BX
+	mov BH, [_ScreenPage]
 	push BP
 	int 0x10
 	pop BP
+	pop BX
 	pop DS
 	mov SP, BP
 	pop BP
@@ -151,6 +163,36 @@ SetTextColor: ;void SetTextColor(int color)
 	and AL, 0xF0
 	mov AH, [BP+4]
 	and AH, 0xF
+	or AL, AH
+	mov [FS:BX+1], AL
+	mov [_CursorAttribute], AL
+	pop BX
+	pop FS
+	pop DS
+	mov SP, BP
+	pop BP
+	ret 2
+
+SetBackgroundColor: ;void SetBackgroundColor(int color)
+	push BP
+	mov BP, SP
+	push DS
+	push FS
+	push BX
+	mov AX, KRN_SEG
+	mov DS, AX
+	xor AH, AH
+	mov AL, [_ScreenPage]
+	shl AX, 8	;Each screen page segment has an offset of 0x100
+	add AX, VGA_SEG
+	mov FS, AX
+	call _GetCursorPtr
+	mov BX, AX
+	mov AL, [FS:BX+1]	;Load attribute at cursor
+	and AL, 0x0F
+	mov AH, [BP+4]
+	shl AH, 4
+	and AH, 0xF0
 	or AL, AH
 	mov [FS:BX+1], AL
 	mov [_CursorAttribute], AL
@@ -348,7 +390,7 @@ PrintString: ;prints the string at DS:[BP+4] (first arg)
 	pop BP
 	ret 2
 
-DisableCursorUpdate: ;void DisableCursorUpdate
+DisableCursorUpdate: ;void DisableCursorUpdate()
 	push BP
 	mov BP, SP
 	push DS
@@ -360,7 +402,7 @@ DisableCursorUpdate: ;void DisableCursorUpdate
 	pop BP
 	ret
 
-EnableCursorUpdate: ;void EnableCursorUpdate
+EnableCursorUpdate: ;void EnableCursorUpdate()
 	push BP
 	mov BP, SP
 	push DS
