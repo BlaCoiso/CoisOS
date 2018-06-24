@@ -352,6 +352,7 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 .addChar:
 	test BYTE [BP-6], 0xFF
 	jnz .charInsert
+.notInsert:
 	mov CX, DI
 	sub CX, [BP+4]	;Get current character count
 	cmp CX, [BP+6]	;Check if length limit reached
@@ -371,21 +372,12 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 .charEnd:
 	ret
 .charInsert:
+	mov CX, [BP+4]
+	add CX, [BP-2]	;Get current end pointer
+	cmp DI, CX
+	je .notInsert
 	mov [DI], AL
 	inc DI
-	mov AX, [BP+4]
-	add AX, [BP-2]
-	cmp DI, AX
-	jbe .skipInc
-	inc WORD [BP-2]
-.skipInc:
-	mov CX, [BP+4]
-	add CX, [BP+6]
-	cmp DI, CX
-	jb .insertOK
-	mov DI, CX
-	mov BYTE [DI], 0	;Make sure there's nothing after the end
-.insertOK:
 	call .updateBuffer
 	ret
 .updateCursor:
