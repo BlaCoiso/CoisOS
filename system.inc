@@ -1,6 +1,8 @@
 KRN_SEG EQU 0x07C0
 _KernelCall EQU 2
+_DumpRegisters EQU 5
 %define KernelCall KRN_SEG:_KernelCall
+%define DumpRegisters KRN_SEG:_DumpRegisters
 KERNEL_API_V EQU 2
 ReadSector EQU 0
 WriteSector EQU 1
@@ -32,6 +34,7 @@ SetBackgroundColor EQU 25
 DisableCursorUpdate EQU 26
 EnableCursorUpdate EQU 27
 SetScreenPage EQU 28
+ClearScreen EQU 29
 ;Filesystem Calls (v1)
 FindFile EQU 30
 FindFile8_3 EQU 31

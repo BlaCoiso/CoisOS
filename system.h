@@ -31,6 +31,7 @@ void SetBackgroundColor(int color);
 void DisableCursorUpdate();
 void EnableCursorUpdate();
 void SetScreenPage(int page);
+void ClearScreen();
 
 //Filesystem calls
 int FindFile(char *filename);

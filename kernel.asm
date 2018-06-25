@@ -5,6 +5,7 @@ SECTION .text
 
 jmp OS_PreInit
 jmp KernelCall	;0x7C0:2
+jmp DumpRegistersFar	;0x7C0:5
 KRN_SEG EQU 0x7C0
 SDA_SEG EQU 0x70
 BSEC_SEG EQU 0x50
@@ -146,7 +147,7 @@ dw PrintUInt, PrintInt, GetCursorPos, EmptyCall, SetCursorPos
 dw SetCursorPosXY, GetCursorAttribute, SetCursorAttribute, SetTextColor, GetKey
 
 dw PrintTitle, ReadString, ReadStringSafe, MemoryCopy, StringCopy
-dw SetBackgroundColor, DisableCursorUpdate, EnableCursorUpdate, SetScreenPage, EmptyCall
+dw SetBackgroundColor, DisableCursorUpdate, EnableCursorUpdate, SetScreenPage, ClearScreen
 
 dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
 dw DumpMemory

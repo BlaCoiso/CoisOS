@@ -415,6 +415,37 @@ EnableCursorUpdate: ;void EnableCursorUpdate()
 	pop BP
 	ret
 
+ClearScreen: ;void ClearScreen()
+	push BP
+	mov BP, SP
+	push DS
+	push ES
+	push DI
+	mov AX, KRN_SEG
+	mov DS, AX
+	xor AX, AX
+	push AX
+	call SetCursorPos
+	xor AH, AH
+	mov AL, [_ScreenPage]
+	shl AX, 8
+	add AX, VGA_SEG
+	mov ES, AX
+	mov CL, [_ScreenWidth]
+	mov AL, [_ScreenHeight]
+	mul CL
+	xor DI, DI
+	mov AH, [_CursorAttribute]
+	mov AL, ' '
+	rep stosw
+	pop DI
+	pop ES
+	pop DS
+	mov SP, BP
+	pop BP
+	ret
+
+
 SECTION .data
 _UpdateCursor db 0xFF
 _CursorAttribute db 0x0F

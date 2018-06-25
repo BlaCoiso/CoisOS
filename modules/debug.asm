@@ -4,13 +4,16 @@ SECTION .text
 DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	;[BP+4] - Address
 	;[BP+6] - Segment
-	;[BP+8] - Count
+	;[BP+8] - Count, if MSB set then ignore header
 	push BP
 	mov BP, SP
 	push DS
 	push SI
 	mov AX, KRN_SEG
 	mov DS, AX
+	mov AX, [BP+8]
+	test AH, 128	;Check ignore header bit
+	jnz .skipHeader
 	push _DumpStr1
 	call PrintString
 	mov AX, [BP+8]
@@ -26,16 +29,18 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	mov AX, [BP+4]
 	push AX
 	call PrintHex
+.skipHeader:
 	mov AX, [BP+6]
 	mov DS, AX	;Load data segment
 	mov SI, [BP+4]	;Load address
 	mov CX, [BP+8]	;Load count
+	and CH, 127	;Clear ignore header bit
 	xor DX, DX	;Printed count
 .dumpLoop:
 	test CX, CX
 	jz .end
 	test DX, 15
-	jnz .skipHeader
+	jnz .skipAddr
 	push DX
 	push CX
 	call PrintNewLine
@@ -53,7 +58,7 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	pop DS
 	pop CX
 	pop DX
-.skipHeader:
+.skipAddr:
 	dec CX
 	inc DX
 	push CX
@@ -79,17 +84,50 @@ DumpMemory: ;void DumpMemory(int addr, int segment, int count)
 	ret 6
 
 DumpRegisters: ;void DumpRegisters()
+	push BP
+	mov BP, SP
+	push AX
+	lea AX, [BP+4]
+	push AX	;SP before call
+	mov AX, [BP+2]
+	push AX	;IP before call
+	push CS
+	call _DumpRegisters
+	mov AX, [BP-2]
+	mov SP, BP
+	pop BP
+	ret
+
+DumpRegistersFar: ;void DumpRegistersFar()
+	push BP
+	mov BP, SP
+	push AX
+	lea AX, [BP+6]
+	push AX	;SP before call
+	mov AX, [BP+2]
+	push AX	;IP before call
+	mov AX, [BP+4]
+	push AX	;CS before call
+	call _DumpRegisters
+	mov AX, [BP-2]
+	mov SP, BP
+	pop BP
+	retf
+
+_DumpRegisters: ;void _DumpRegisters(CS,IP,SP,AX,BP)
+	;[BP+22] - Internal caller address
 	push DS	;[BP+20]
 	pusha	;Save ALL registers since this must keep the system in the same state
 	;[BP+4] - DI
 	;[BP+6] - SI
-	;[BP+8] - BP
-	;[BP+10]- SP
+	;[BP+32]- BP
+	;[BP+28]- SP
 	;[BP+12]- BX
 	;[BP+14]- DX
 	;[BP+16]- CX
-	;[BP+18]- AX
-	;[BP+22]- IP
+	;[BP+30]- AX
+	;[BP+26]- IP
+	;[BP+24]- CS
 	pushf	;[BP+2]
 	push BP
 	mov BP, SP
@@ -98,7 +136,7 @@ DumpRegisters: ;void DumpRegisters()
 	call PrintNewLine
 	push _RegStr
 	call PrintTitle
-	mov AX, [BP+18]	;Load AX
+	mov AX, [BP+30]	;Load AX
 	xor BX, BX
 	call .printRegister
 	mov AX, [BP+12]	;Load BX
@@ -114,7 +152,7 @@ DumpRegisters: ;void DumpRegisters()
 	mov BL, 13
 	call .printRegister
 	call PrintNewLine
-	mov AX, CS	;Load CS
+	mov AX, [BP+24]	;Load CS
 	mov BL, 4
 	call .printRegister
 	mov AX, [BP+20]	;Load DS
@@ -133,14 +171,13 @@ DumpRegisters: ;void DumpRegisters()
 	mov AX, SS	;Load SS
 	mov BL, 8
 	call .printRegister
-	mov AX, [BP+10]	;Load SP
-	add AX, 4	;DS and return addr was added to the stack before saving SP
+	mov AX, [BP+28]	;Load SP
 	mov BL, 10
 	call .printRegister
-	mov AX, [BP+8]	;Load BP
+	mov AX, [BP+32]	;Load BP
 	mov BL, 11
 	call .printRegister
-	mov AX, [BP+22]	;Load IP
+	mov AX, [BP+26]	;Load IP
 	mov BL, 9
 	call .printRegister
 	call PrintNewLine
@@ -200,7 +237,7 @@ DumpRegisters: ;void DumpRegisters()
 	popf
 	popa
 	pop DS
-	ret
+	ret 10
 .printRegister: ;value in AX, number in BX
 	xor BH, BH
 	shl BX, 2	;Each string is 4 bytes
@@ -225,7 +262,11 @@ DumpRegisters: ;void DumpRegisters()
 	ret
 
 _InitIVT: ;Initializes the Interrupt Vector Table
-	;TODO
+	mov AX, 3
+	mov CX, Int3Handler
+	call _RegINTHandler
+	mov AX, 1
+	call _RegINTHandler
 	ret
 
 _RegINTHandler: ;Register an interrupt handler: AX - Interrupt number, CX - Handler pointer
@@ -233,14 +274,25 @@ _RegINTHandler: ;Register an interrupt handler: AX - Interrupt number, CX - Hand
 	mov BP, SP
 	push AX
 	push CX
-	shl AX, 2
-	;TODO: Write Pointer to the address
+	push BX
+	push ES
+	shl AX, 2	;Each interrupt is 4 bytes
+	xor BX, BX
+	mov ES, BX
+	mov BX, AX
+	mov [ES:BX], CX
+	mov WORD [ES:BX+2], KRN_SEG
+	pop ES
+	pop BX
 	pop CX
 	pop AX
 	mov SP, BP
 	pop BP
 	ret
 
+;TODO: Add code for stack trace
+
+%include "modules/interrupts.asm"
 
 SECTION .data
 _RegNames db 'AX:', 0, 'BX:', 0, 'CX:', 0, 'DX:', 0

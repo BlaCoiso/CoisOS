@@ -197,12 +197,12 @@ PrintTitle: ;void PrintTitle(char *string)
 	shr CX, 1
 	mov [BP-4], CX	;Save separator length
 	call .printSep
-	mov AL, '|'
+	mov AL, '['
 	call _PrintChar
 	mov AX, [BP+4]
 	push AX
 	call PrintString
-	mov AL, '|'
+	mov AL, ']'
 	call _PrintChar
 	call DisableCursorUpdate
 	mov CX, [BP-4]
