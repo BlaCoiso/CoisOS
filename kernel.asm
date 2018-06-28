@@ -9,6 +9,8 @@ jmp DumpRegistersFar	;0x7C0:5
 KRN_SEG EQU 0x7C0
 SDA_SEG EQU 0x70
 BSEC_SEG EQU 0x50
+FAT_SEG EQU 0xA00
+FATRD_SEG EQU 0xA40
 
 OS_PreInit:
 	mov AX, KRN_SEG
@@ -37,7 +39,7 @@ OS_Init:
 	call DumpRegisters
 	push TestStr
 	call PrintString	;PrintString(TestStr)
-	push 0x9C0
+	push 0xAC0
 	push 0
 	push TestFname
 	call ReadFile
@@ -52,10 +54,10 @@ OS_Init:
 	push $	;Save current address for stack trace
 	push BP
 	mov BP, SP
-	mov AX, 0x9C0
+	mov AX, 0xAC0
 	mov DS, AX
 	mov ES, AX
-	call 0x9C0:0
+	call 0xAC0:0
 	mov SP, BP
 	pop BP
 	add SP, 2

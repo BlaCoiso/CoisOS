@@ -12,10 +12,10 @@
 0x700 -	0x8FF:	System data area (SDA), contains data required for the OS
 0x900 -	0x7BFF:	Reserved for stack (29440 bytes)
 0x7C00 -0x7DFF:	Starts with boot sector, later will have Kernel
-0x7E00 -0x8FFF:	Reserved for Kernel
-0x9000 -0x93FF:	FAT Copy
-0x9400 -0x97FF: Root Dir Copy
-0x9800 -0x9BFF: SubDir Copy
+0x7E00 -0x9FFF:	Reserved for Kernel
+0xA000 -0xA3FF:	FAT Copy
+0xA400 -0xA7FF: Root Dir Copy
+0xA800 -0xABFF: SubDir Copy
 
 ===================== SDA Structure =====================
 0x700 - 0x70F (16 Bytes): DAP (Disk Access Packet)

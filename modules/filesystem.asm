@@ -7,7 +7,7 @@ _LoadFAT:
 	push FS
 	mov AX, BSEC_SEG
 	mov FS, AX
-	push 0x900	;FAT Copy Segment
+	push FAT_SEG	;FAT Copy Segment
 	push 0	;Offset: 0
 	push 2	;Read 2 Sectors
 	mov AX, [FS:0x211]
@@ -25,7 +25,7 @@ _WriteFAT:
 	push FS
 	mov AX, BSEC_SEG
 	mov FS, AX
-	push 0x900	;FAT Copy Segment
+	push FAT_SEG	;FAT Copy Segment
 	push 0	;Offset: 0
 	push 2	;Write 2 Sectors
 	mov AX, [FS:0x211]
@@ -45,7 +45,7 @@ _LoadRootDir:
 	push FS
 	mov AX, BSEC_SEG
 	mov FS, AX
-	push 0x900	;FAT Copy Segment
+	push FAT_SEG	;FAT Copy Segment
 	push 0x400	;Offset: 0x400 (Root Dir Copy)
 	push 2	;Read 2 Sectors
 	mov AX, [FS:0x213]
@@ -63,7 +63,7 @@ _WriteRootDir:
 	push FS
 	mov AX, BSEC_SEG
 	mov FS, AX
-	push 0x900	;FAT Copy Segment
+	push FAT_SEG	;FAT Copy Segment
 	push 0x400	;Offset: 0x400 (Root Dir Copy)
 	push 2	;Write 2 Sectors
 	mov AX, [FS:0x213]
@@ -104,7 +104,7 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	push SI
 	mov AX, SDA_SEG
 	mov FS, AX	;Load SDA
-	mov AX, 0x940
+	mov AX, FATRD_SEG
 	mov ES, AX	;Set FAT Root Dir Segment
 	cmp WORD [FS:0x1C], 0
 	je .skipLoad	;First sector already loaded, saves some time and I/O
@@ -280,7 +280,7 @@ _GetNextCluster: ;int _GetNextCluster(int cluster)
 	mov BP, SP
 	push ES
 	push BX
-	mov AX, 0x900
+	mov AX, FAT_SEG
 	mov ES, AX
 	mov BX, [BP+4]
 	shl BX, 1	;Each cluster is 2 bytes
@@ -369,7 +369,7 @@ ReadFileEntry: ;void ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
 	mov WORD [BP-4], 0	;Clusters processed
 	push ES
 	push SI
-	mov AX, 0x900
+	mov AX, FAT_SEG
 	mov ES, AX	;Load FAT Data segment
 	mov SI, [BP+4]
 	add SI, 0x400	;Load file entry

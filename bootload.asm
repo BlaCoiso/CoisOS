@@ -79,7 +79,7 @@ main:
 	add AX, BX	;Add the Root Dir offset to its size
 	mov [0x217], AX
 	;Now the values required to load a file are ready
-	mov AX, 0x900	;FAT Copy Offset
+	mov AX, 0xA00	;FAT Copy Offset
 	mov ES, AX
 	xor BX, BX
 	mov CX, 2
