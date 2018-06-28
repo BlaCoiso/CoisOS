@@ -15,6 +15,7 @@ OS_PreInit:
 	mov DS, AX
 	mov ES, AX
 	mov SP, 0x7300
+	xor BP, BP
 	xor BX, BX
 	xor CX, CX
 	xor DX, DX
@@ -48,6 +49,7 @@ OS_Init:
 	.ReadOK:
 	push DS
 	push ES
+	push $	;Save current address for stack trace
 	push BP
 	mov BP, SP
 	mov AX, 0x9C0
@@ -56,6 +58,7 @@ OS_Init:
 	call 0x9C0:0
 	mov SP, BP
 	pop BP
+	add SP, 2
 	pop ES
 	pop DS
 	push TestDoneStr

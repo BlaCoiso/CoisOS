@@ -4,11 +4,6 @@ VGA_SEG EQU 0xB800
 
 _InitScreen:
 	call ReadCursorPos
-	push DS
-	mov AX, KRN_SEG
-	mov DS, AX
-	call _GetCursorPtr
-	pop DS
 	ret
 
 GetScreenWidth:
@@ -42,6 +37,7 @@ ReadCursorPos: ;int ReadCursorPos()
 	pop BX
 	mov [_CursorX], DL
 	mov [_CursorY], DH
+	call _GetCursorPtr
 	mov AX, DX
 	pop DS
 	mov SP, BP
@@ -83,6 +79,7 @@ SetCursorPos: ;void SetCursorPos(int pos)
 	mov DX, [BP+4]
 	mov [_CursorX], DL
 	mov [_CursorY], DH
+	call _GetCursorPtr
 	mov AH, 2
 	push BX
 	mov BH, [_ScreenPage]
@@ -107,6 +104,7 @@ SetCursorPosXY: ;void SetCursorPos(int x, int y)
 	mov AX, [BP+6]	;y pos
 	mov [_CursorY], AL
 	mov DH, AL
+	call _GetCursorPtr
 	mov AH, 2
 	push BX
 	mov BH, [_ScreenPage]
@@ -222,11 +220,12 @@ SetScreenPage: ;void SetScreenPage(int page)
 	pop BP
 	ret 2
 
-_GetCursorPtr: ;void _GetCursorPtr()
+_GetCursorPtr: ;void *_GetCursorPtr()
 	;Assume DS is already set
 	push BP
 	mov BP, SP
 	sub SP, 2	;[BP-2] - Temp chars
+	push CX
 	mov AL, [_CursorX]
 	xor AH, AH
 	shl AX, 1
@@ -238,6 +237,7 @@ _GetCursorPtr: ;void _GetCursorPtr()
 	mul CL
 	add AX, [BP-2]
 	mov [_CursorPtr], AX
+	pop CX
 	mov SP, BP
 	pop BP
 	ret
@@ -257,7 +257,6 @@ _PrintChar:
 	shl AX, 8	;Each screen page segment has an offset of 0x100
 	add AX, VGA_SEG
 	mov FS, AX
-	call _GetCursorPtr
 	mov AX, [BP-2]
 	cmp AL, ' '
 	jb .special
@@ -267,6 +266,7 @@ _PrintChar:
 	mov [FS:BX], AX
 	pop BX
 	inc BYTE [_CursorX]
+	add WORD [_CursorPtr], 2
 	jmp .end
 .special:
 	cmp AL, 13
@@ -286,6 +286,7 @@ _PrintChar:
 	test AL, AL
 	jz .end
 	dec BYTE [_CursorX]
+	call _GetCursorPtr
 	jmp .end
 .tab:
 	mov AL, [_CursorX]
@@ -293,11 +294,13 @@ _PrintChar:
 	inc AL
 	shl AL, 3
 	mov [_CursorX], AL
+	call _GetCursorPtr
 	jmp .end
 .lineFeed:
 	inc BYTE [_CursorY]
 .return:
 	mov BYTE [_CursorX], 0
+	call _GetCursorPtr
 .end:
 	call _CursorCheck
 	pop CX
@@ -314,6 +317,7 @@ _CursorCheck:
 	jb .noChange
 	mov BYTE [_CursorX], 0
 	inc BYTE [_CursorY]
+	call _GetCursorPtr
 .noChange:
 	mov AL, [_ScreenHeight]
 	cmp [_CursorY], AL
@@ -335,6 +339,7 @@ _ScreenScroll:
 	push DI
 	push SI
 	dec BYTE [_CursorY]
+	call _GetCursorPtr
 	xor DI, DI
 	mov SI, [_ScreenWidth]
 	shl SI, 1
@@ -370,6 +375,7 @@ PrintString: ;prints the string at DS:[BP+4] (first arg)
 	mov AX, KRN_SEG
 	mov DS, AX
 	mov BYTE [_UpdateCursor], 0
+	call _GetCursorPtr
 	pop DS
 .loop:
 	lodsb
@@ -445,6 +451,27 @@ ClearScreen: ;void ClearScreen()
 	pop BP
 	ret
 
+PrintNewLine:
+	push BP
+	mov BP, SP
+	push DS
+	push FS
+	mov AX, KRN_SEG
+	mov DS, AX
+	inc BYTE [_CursorY]
+	mov BYTE [_CursorX], 0
+	call _GetCursorPtr
+	xor AH, AH
+	mov AL, [_ScreenPage]
+	shl AX, 8	;Each screen page segment has an offset of 0x100
+	add AX, VGA_SEG
+	mov FS, AX
+	call _CursorCheck
+	pop FS
+	pop DS
+	mov SP, BP
+	pop BP
+	ret
 
 SECTION .data
 _UpdateCursor db 0xFF

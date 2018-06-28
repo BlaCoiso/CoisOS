@@ -290,7 +290,28 @@ _RegINTHandler: ;Register an interrupt handler: AX - Interrupt number, CX - Hand
 	pop BP
 	ret
 
-;TODO: Add code for stack trace
+GetStackTrace: ;void GetStackTrace(int FrameBase)
+	push BP
+	mov BP, SP
+	push BX
+	mov BX, [BP+4]	;Load frame pointer
+.loop:
+	test BX, BX
+	jz .end
+	cmp BX, [SS:BX]
+	je .end
+	mov AX, [SS:BX+2]	;Load return address of frame
+	push AX
+	call PrintHex
+	mov BX, [SS:BX]
+	push '<'
+	call PrintChar
+	jmp .loop
+.end:
+	pop BX
+	mov SP, BP
+	pop BP
+	ret 2
 
 %include "modules/interrupts.asm"
 

@@ -73,13 +73,6 @@ PrintHex: ;void PrintHex(int value)
 	pop BP
 	ret 2
 
-PrintNewLine:
-	mov AL, 0xD
-	call _PrintChar
-	mov AL, 0xA
-	call _PrintChar
-	ret
-
 UInt2Str: ;int UInt2Str(int value, char *buffer)
 	;[BP]:	Last BP
 	;[BP+2]:Return Addr
@@ -187,7 +180,7 @@ PrintTitle: ;void PrintTitle(char *string)
 .tooBig:
 	xor CX, CX
 .sizeOk:
-	test CX, 1
+	test CL, 1
 	jz .skipChar
 	push AX
 	mov AL, '='
@@ -468,7 +461,7 @@ MemoryCopy: ;void MemoryCopy(void *dest, void *source, int length)
 	mov SI, [BP+6]
 	mov DI, [BP+4]
 	mov CX, [BP+8]	;Load length
-	test CX, 1
+	test CL, 1
 	jz .noOpt
 	shr CX, 1	;Optimization: Move words instead of bytes, executes faster
 	rep movsw

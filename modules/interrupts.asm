@@ -8,8 +8,10 @@ Int3Handler:
     pusha   ;[BP+2] - [BP+16]
     push BP
     mov BP, SP
-    sub SP, 2
-    push AX ;[BP-4]
+    sub SP, 4
+    ;[BP-2] - Previous screen page
+    ;[BP-4] - Previous cursor pos
+    push AX ;[BP-6]
     mov AX, [BP+20]
     cmp AX, 0xF000
     jae .intret ;BIOS segment, don't interrupt
@@ -18,8 +20,11 @@ Int3Handler:
     push DS
     mov AX, KRN_SEG
     mov DS, AX
+    call GetCursorPos
+    mov [BP-4], AX
+    xor AH, AH
     mov AL, [_ScreenPage]
-    mov [BP-2], AL
+    mov [BP-2], AX
     push 3
     call SetScreenPage
     call ClearScreen
@@ -34,7 +39,7 @@ Int3Handler:
     popf    ;Load flags before interrupt
     mov AX, [BP]
     push AX ;Old BP
-    mov AX, [BP-4]
+    mov AX, [BP-6]
     push AX ;Old AX
     lea AX, [BP+22]
     push AX ;Old SP
@@ -58,6 +63,17 @@ Int3Handler:
     mov AX, [BP+18]
     push AX
     call DumpMemory
+    push _StackStr
+    call PrintString
+    mov AX, [BP+18]
+    push AX
+    call PrintHex
+    push '<'
+    call PrintChar
+    mov AX, [BP]
+    push AX
+    call GetStackTrace
+    call PrintNewLine
     ;TODO: Dump stack and stack trace
     push _DbgPrompt
     call PrintString
@@ -83,9 +99,9 @@ Int3Handler:
     jmp .promptClean
 .toggleV:
     mov AX, [BP-2]
-    not AH
+    xor AH, 0x80
     mov [BP-2], AX
-    test AH, 0xF0
+    test AH, 0x80
     jz .restore
     push AX
     call SetScreenPage
@@ -98,6 +114,9 @@ Int3Handler:
     mov AX, [BP-2]
     push AX
     call SetScreenPage
+    mov AX, [BP-4]
+    push AX
+    call SetCursorPos
     pop DS
 .intret:
     mov SP, BP
@@ -108,4 +127,5 @@ Int3Handler:
 SECTION .data
 _TrapStr db 'Debugger Breakpoint Hit', 0
 _MemStr db 'Next instructions: ', 0
+_StackStr db 'Stack Trace: ', 0
 _DbgPrompt db '(c)ontinue, (s)tep, toggle (v)iew', 0
