@@ -131,7 +131,7 @@ _DumpRegisters: ;void _DumpRegisters(CS,IP,SP,AX,BP)
 	pushf	;[BP+2]
 	push BP
 	mov BP, SP
-	mov AX, 0x7C0
+	mov AX, KRN_SEG
 	mov DS, AX	;Load kernel DS for strings
 	call PrintNewLine
 	push _RegStr

@@ -24,8 +24,8 @@ ReadSector:;void ReadSector(int sector, int count, void* buffer, int segment)
 	mov BX, [BP+8]	;Load Buffer Pointer
 	mov CX, [BP+6]	;Load Sector Count 
 	mov AX, [BP+4]	;Load Sector Offset
-	mov DL, [FS:0x24]	;Load Drive Number
-	test BYTE [FS:0x210], 0xFF	;Check LBA Support
+	mov DL, [FS:BSEC.dn]	;Load Drive Number
+	test BYTE [FS:SDA_OFFS+SDA.LBA], 0xFF	;Check LBA Support
 	jz .noLBA
 	call _ReadSectorLBA
 	jmp .end
@@ -94,8 +94,8 @@ WriteSector:;void WriteSector(int sector, int count, void* buffer, int segment)
 	mov BX, [BP+8]	;Load Buffer Pointer
 	mov CX, [BP+6]	;Load Sector Count 
 	mov AX, [BP+4]	;Load Sector Offset
-	mov DL, [FS:0x24]	;Load Drive Number
-	test BYTE [FS:0x210], 0xFF	;Check LBA Support
+	mov DL, [FS:BSEC.dn]	;Load Drive Number
+	test BYTE [FS:SDA_OFFS+SDA.LBA], 0xFF	;Check LBA Support
 	jz .noLBA
 	call _WriteSectorLBA
 	jmp .end
@@ -147,11 +147,11 @@ _WriteSectorCHS:
 
 _SetCHS:
 	push BX
-	div BYTE [FS:0x18]	;Get the sector number, AH=sector number
+	div BYTE [FS:BSEC.spc]	;Get the sector number, AH=sector number
 	inc AH	;first sector is 1
 	mov BX, AX	;Store it temporarily
 	xor AH, AH
-	div BYTE [FS:0x1A]	;Get the head number, AH=head number, AL=cylinder
+	div BYTE [FS:BSEC.hdc]	;Get the head number, AH=head number, AL=cylinder
 	mov CH, AL	;Load cylinder number
 	mov AL, CL	;Load sector count
 	mov CL, BH	;Load sector start
@@ -160,10 +160,10 @@ _SetCHS:
 	ret
 
 _SetLBA:
-	mov [FS:0x202], CX
-	mov [FS:0x206], ES
-	mov [FS:0x204], BX
-	mov [FS:0x208], AX
+	mov [FS:SDA_OFFS+2], CX
+	mov [FS:SDA_OFFS+6], ES
+	mov [FS:SDA_OFFS+4], BX
+	mov [FS:SDA_OFFS+8], AX
 	ret
 
 _DiskError:
@@ -175,7 +175,7 @@ _DiskError:
 	int 0x13	;Get Error Number
 	push AX	;Save Error Number
 	xor AX, AX
-	mov DL, [FS:0x24]
+	mov DL, [FS:BSEC.dn]
 	clc
 	int 0x13	;Reset drive
 	jc .fatal	;Drive failed to reset

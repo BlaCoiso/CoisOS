@@ -6,11 +6,8 @@ SECTION .text
 jmp OS_PreInit
 jmp KernelCall	;0x7C0:2
 jmp DumpRegistersFar	;0x7C0:5
-KRN_SEG EQU 0x7C0
-SDA_SEG EQU 0x70
-BSEC_SEG EQU 0x50
-FAT_SEG EQU 0xA00
-FATRD_SEG EQU 0xA40
+
+%include "consts.inc"
 
 OS_PreInit:
 	mov AX, KRN_SEG
@@ -26,13 +23,13 @@ OS_PreInit:
 	mov AX, SDA_SEG
 	mov FS, AX
 	xor AX, AX
-	mov [FS:0x19], AL
-	mov [FS:0x1A], AL
-	mov [FS:0x1C], AL
+	mov [FS:SDA.sFAT], AL
+	mov [FS:SDA.cfsec], AL
+	mov [FS:SDA.cfrds], AL
+	call _InitIVT
 	call _InitScreen
 	call _LoadFAT
 	call _LoadRootDir
-	call _InitIVT
 OS_Init:
 	push InitStr
 	call PrintString	;PrintString(InitStr)

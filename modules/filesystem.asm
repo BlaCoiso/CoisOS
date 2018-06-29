@@ -10,8 +10,8 @@ _LoadFAT:
 	push FAT_SEG	;FAT Copy Segment
 	push 0	;Offset: 0
 	push 2	;Read 2 Sectors
-	mov AX, [FS:0x211]
-	add AX, [FS:0x21A]
+	mov AX, [FS:SDA_OFFS+SDA.FATo]
+	add AX, [FS:SDA_OFFS+SDA.cfsec]
 	push AX	;Sector Start
 	call ReadSector
 	pop FS
@@ -28,8 +28,8 @@ _WriteFAT:
 	push FAT_SEG	;FAT Copy Segment
 	push 0	;Offset: 0
 	push 2	;Write 2 Sectors
-	mov AX, [FS:0x211]
-	add AX, [FS:0x21A]
+	mov AX, [FS:SDA_OFFS+SDA.FATo]
+	add AX, [FS:SDA_OFFS+SDA.cfsec]
 	push AX	;Sector Start
 	call WriteSector
 	pop FS
@@ -46,10 +46,10 @@ _LoadRootDir:
 	mov AX, BSEC_SEG
 	mov FS, AX
 	push FAT_SEG	;FAT Copy Segment
-	push 0x400	;Offset: 0x400 (Root Dir Copy)
+	push RD_OFFS	;Offset: 0x400 (Root Dir Copy)
 	push 2	;Read 2 Sectors
-	mov AX, [FS:0x213]
-	add AX, [FS:0x21C]
+	mov AX, [FS:SDA_OFFS+SDA.FATdo]
+	add AX, [FS:SDA_OFFS+SDA.cfrds]
 	push AX	;Sector Start
 	call ReadSector
 	pop FS
@@ -64,10 +64,10 @@ _WriteRootDir:
 	mov AX, BSEC_SEG
 	mov FS, AX
 	push FAT_SEG	;FAT Copy Segment
-	push 0x400	;Offset: 0x400 (Root Dir Copy)
+	push RD_OFFS	;Offset: 0x400 (Root Dir Copy)
 	push 2	;Write 2 Sectors
-	mov AX, [FS:0x213]
-	add AX, [FS:0x21C]
+	mov AX, [FS:SDA_OFFS+SDA.FATdo]
+	add AX, [FS:SDA_OFFS+SDA.cfrds]
 	push AX	;Sector Start
 	call WriteSector
 	pop FS
@@ -76,7 +76,7 @@ _WriteRootDir:
 	ret
 
 FindFile: ;int FindFile(char* filename)
-	;Returns FFFF for not found, Root Dir Buffer Pointer if found (0x0940:PTR)
+	;Returns FFFF for not found, Root Dir Buffer Pointer if found (FATRD_SEG:PTR)
 	push BP
 	mov BP, SP
 	push DS
@@ -106,9 +106,9 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	mov FS, AX	;Load SDA
 	mov AX, FATRD_SEG
 	mov ES, AX	;Set FAT Root Dir Segment
-	cmp WORD [FS:0x1C], 0
+	cmp WORD [FS:SDA.cfrds], 0
 	je .skipLoad	;First sector already loaded, saves some time and I/O
-	mov WORD [FS:0x1C], 0
+	mov WORD [FS:SDA.cfrds], 0
 	call _LoadRootDir
 .skipLoad:
 	mov SI, [BP+4]	;Load filename
@@ -121,7 +121,7 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	jz .fail	;End marker: no more entries after this
 	cmp AL, 0xE5	;Deleted entry
 	je .skip
-	test BYTE [ES:DI+0xB], 24	;Check special attributes
+	test BYTE [ES:DI+FSEnt.attr], 24	;Check special attributes
 	jnz .skip
 	mov CX, 11	;8+3
 	repe cmpsb
@@ -134,7 +134,7 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	mov SI, [BP+4]
 	cmp WORD [BP-2], 0x400
 	jb .checkLoop
-	add WORD [FS:0x1C], 2	;Load next 2 sectors of the root dir
+	add WORD [FS:SDA.cfrds], 2	;Load next 2 sectors of the root dir
 	call _LoadRootDir
 	mov WORD [BP-2], 0	;Reset entry pointer
 	jmp .checkLoop
@@ -149,7 +149,7 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	pop BP
 	ret 2
 
-_Get8_3Name: ;[BP+4] = Filename pointer
+_Get8_3Name:	;[BP+4] = Filename pointer
 	push BP
 	mov BP, SP
 	sub SP, 3	;Reserve space for local vars
@@ -280,13 +280,24 @@ _GetNextCluster: ;int _GetNextCluster(int cluster)
 	mov BP, SP
 	push ES
 	push BX
+	push FS
 	mov AX, FAT_SEG
 	mov ES, AX
+	mov AX, SDA_SEG
+	mov FS, AX
 	mov BX, [BP+4]
 	shl BX, 1	;Each cluster is 2 bytes
-	;TODO: Get the right FAT offset, load it, recalculate offset
-	;FIXME: This code will FAIL with cluster number > 512
+	mov AX, BX
+	and BX, 1023
+	shr AX, 9
+	and AX, 0xFFFE
+	cmp AX, [FS:SDA.cfsec]
+	je .skipLoad
+	mov [FS:SDA.cfsec], AX
+	call _LoadFAT
+.skipLoad:
 	mov AX, [ES:BX]
+	pop FS
 	pop BX
 	pop ES
 	mov SP, BP
@@ -304,7 +315,7 @@ _LoadCluster:	;int _LoadCluster(int cluster, void* buffer, int segment)
 	push AX
 	mov AX, BSEC_SEG
 	mov FS, AX	;Load System segment
-	mov AL, [FS:0xD]	;Load sectors per cluster
+	mov AL, [FS:BSEC.spc]	;Load sectors per cluster
 	xor AH, AH
 	mov [BP-2], AX
 	push AX
@@ -312,7 +323,7 @@ _LoadCluster:	;int _LoadCluster(int cluster, void* buffer, int segment)
 	sub AX, 2	;First 2 clusters aren't "real"
 	mov CX, [BP-2]
 	mul CL	;Get cluster data offset
-	add AX, [FS:0x217]	;Load File Data offset
+	add AX, [FS:SDA_OFFS+SDA.fsfdo]	;Load File Data offset
 	push AX
 	call ReadSector
 	mov AX, [BP-2]
@@ -364,16 +375,15 @@ ReadFile8_3: ;bool ReadFile8_3(char* filename8_3, void* buffer, int segment)
 ReadFileEntry: ;void ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
 	push BP
 	mov BP, SP
-	sub SP, 4	;Local variables
+	sub SP, 2	;Local variables
 	;[BP-2] - Previous cluster
-	mov WORD [BP-4], 0	;Clusters processed
 	push ES
 	push SI
 	mov AX, FAT_SEG
 	mov ES, AX	;Load FAT Data segment
 	mov SI, [BP+4]
 	add SI, 0x400	;Load file entry
-	mov AX, [ES:SI+0x1A]	;Load cluster number
+	mov AX, [ES:SI+FSEnt.cluster]	;Load cluster number
 	mov [BP-2], AX
 .loadLoop:
 	cmp AX, 0xFFF0
@@ -399,5 +409,83 @@ ReadFileEntry: ;void ReadFileEntry(int* rootDirEntry, void* buffer, int segment)
 	pop BP
 	ret 6
 
+_From8_3Name: ;void _From8_3Name(char *name8_3)
+	push BP
+	mov BP, SP
+	sub SP, 1
+	;[BP-2] - Spaces
+	push SI
+	push DI
+	push ES
+	mov DI, _FileNameBuf
+	mov SI, [BP+4]
+	mov AX, KRN_SEG
+	mov ES, AX
+	mov CX, 11
+.loop:
+	test CX, CX
+	jz .end
+	dec CX
+	lodsb
+	cmp AL, ' '
+	jne .skipSpace
+	inc BYTE [BP-2]
+	jmp .loop
+.skipSpace:
+	cmp BYTE [BP-2], 0
+	jz .skipCheck
+	push AX
+	mov AX, SI
+	sub AX, [BP+4]	;Get current char pos
+	cmp AL, 8
+	pop AX
+	ja .skipCheck
+	push CX
+	push AX
+	mov CL, [BP-2]
+	mov AL, ' '
+	rep stosb	;Include spaces in the name
+	pop AX
+	pop CX
+	mov BYTE [BP-2], 0
+.skipCheck:
+	push AX
+	mov AX, SI
+	sub AX, [BP+4]
+	cmp AL, 9
+	jne .skipDot
+	mov AL, '.'
+	stosb
+.skipDot:
+	pop AX
+	stosb
+	jmp .loop
+.end:
+	xor AL, AL
+	stosb	;Add null byte at the end
+	pop ES
+	pop DI
+	pop SI
+	mov SP, BP
+	pop BP
+	ret 2
+
 SECTION .bss
 _8_3NameBuf resb 12
+_FileNameBuf resb 13
+
+STRUC FSEnt
+.name resb 8
+.ext resb 3
+.attr resb 1
+resb 1
+.crms resb 1
+.crtime resw 1
+.crdate resw 1
+.ladate resw 1
+resw 1
+.lwtime resw 1
+.lwdate resw 1
+.cluster resw 1
+.size resd 1
+ENDSTRUC
