@@ -43,3 +43,7 @@ ReadFile8_3 EQU 33
 ReadFileEntry EQU 34
 ;Debug Calls (v1)
 DumpMemory EQU 35
+GetStackTrace EQU 36
+;String/Screen Calls (v2)
+DrawBox EQU 40
+SetCursorOffset EQU 41

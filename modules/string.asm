@@ -490,16 +490,118 @@ StringCopy: ;void StringCopy(char *dest, char *source)
 	pop BP
 	ret 4
 
-DrawBox: ;void DrawBox(int x, int y, int width, int height)
-	;TODO
-	ret 8
+DrawBox: ;void DrawBox(int x, int y, int width, int height, int thick)
+	;[BP+4] - x
+	;[BP+6] - y
+	;[BP+8] - width
+	;[BP+10]- height
+	;[BP+12]- thick
+	push BP
+	mov BP, SP
+	sub SP, 4
+	;[BP-2] - Old cursor pos
+	;[BP-4] - Current Y
+	push DS
+	push BX
+	mov AX, KRN_SEG
+	mov DS, AX
+	mov AX, [BP+12]
+	test AX, AX
+	jz .noThick
+	mov BX, _ThickBox
+	jmp .continue
+.noThick:
+	mov BX, _SmallBox
+.continue:
+	call GetCursorPos
+	mov [BP-2], AX
+	xor AX, AX
+	mov [BP-4], AX
+	call DisableCursorUpdate
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	call SetCursorPosXY
+	mov AL, [BX+BoxChr.UL]
+	call _PrintChar
+	mov CX, [BP+8]
+	sub CX, 2
+.loop1:
+	mov AL, [BX+BoxChr.HB]
+	call _PrintChar
+	dec CX
+	test CX, CX
+	jnz .loop1
+
+	mov AL, [BX+BoxChr.UR]
+	call _PrintChar
+.loop2:
+	inc BYTE [BP-4]
+	mov AX, [BP-4]
+	add AX, [BP+6]
+	push AX
+	push AX
+	mov AX, [BP+4]
+	push AX
+	call SetCursorPosXY
+	mov AL, [BX+BoxChr.VB]
+	call _PrintChar
+	mov AX, [BP+4]
+	add AX, [BP+8]
+	dec AX
+	push AX
+	call SetCursorPosXY
+	mov AL, [BX+BoxChr.VB]
+	call _PrintChar
+	mov AX, [BP-4]
+	cmp AX, [BP+10]
+	jb .loop2
+
+	mov AX, [BP+10]
+	add AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	call SetCursorPosXY
+	mov AL, [BX+BoxChr.DL]
+	call _PrintChar
+	mov CX, [BP+8]
+	sub CX, 2
+.loop3:
+	mov AL, [BX+BoxChr.HB]
+	call _PrintChar
+	dec CX
+	test CX, CX
+	jnz .loop3
+
+	mov AL, [BX+BoxChr.DR]
+	call _PrintChar
+	mov AX, [BP-2]
+	push AX
+	call SetCursorPos
+	call EnableCursorUpdate
+	pop BX
+	pop DS
+	mov SP, BP
+	pop BP
+	ret 10
 
 %include "drivers/screen.asm"
 
 SECTION .data
-_SmallBox db 0xDA, 0xBF, 0xC0, 0xD9, 0xC4, 0xD3 ;UL, UR, DL, DR, HB, VB
-_ThickBox db 0xC9, 0xBB, 0xC8, 0xBC, 0xBA, 0xCD
+_SmallBox db 0xDA, 0xBF, 0xC0, 0xD9, 0xC4, 0xB3 ;UL, UR, DL, DR, HB, VB
+_ThickBox db 0xC9, 0xBB, 0xC8, 0xBC, 0xCD, 0xBA
 _HexPrefix db '0x',0
+
+STRUC BoxChr
+.UL resb 1
+.UR resb 1
+.DL resb 1
+.DR resb 1
+.HB resb 1
+.VB resb 1
+ENDSTRUC
 
 SECTION .bss
 _IntBuf resb 7

@@ -130,7 +130,7 @@ FindFile8_3: ;int FindFile8_3(char* filename8_3)
 	mov AX, [BP-2]
 	jmp .end
 .skip:
-	add WORD [BP-2], 32	;Each entry is 32 bytes long, skip the entry
+	add WORD [BP-2], FSEnt_size	;Each entry is 32 bytes long, skip the entry
 	mov SI, [BP+4]
 	cmp WORD [BP-2], 0x400
 	jb .checkLoop

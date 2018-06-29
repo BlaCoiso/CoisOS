@@ -152,10 +152,13 @@ dw PrintTitle, ReadString, ReadStringSafe, MemoryCopy, StringCopy
 dw SetBackgroundColor, DisableCursorUpdate, EnableCursorUpdate, SetScreenPage, ClearScreen
 
 dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
-dw DumpMemory
+dw DumpMemory, GetStackTrace, EmptyCall, EmptyCall, EmptyCall
+
+dw DrawBox, SetCursorOffset, EmptyCall, EmptyCall, EmptyCall
 
 krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2
 dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0
 dw 1, 1, 2, 3, 2, 1, 0, 0, 1, 0
-dw 1, 1, 3, 3, 3, 3
-KernelCallCount EQU 36
+dw 1, 1, 3, 3, 3, 3, 1, 0, 0, 0
+dw 5, 1, 0, 0, 0
+KernelCallCount EQU 42

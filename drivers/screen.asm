@@ -299,7 +299,8 @@ _PrintChar:
 .lineFeed:
 	inc BYTE [_CursorY]
 .return:
-	mov BYTE [_CursorX], 0
+	mov AL, [_OffsetX]
+	mov BYTE [_CursorX], AL
 	call _GetCursorPtr
 .end:
 	call _CursorCheck
@@ -315,7 +316,8 @@ _CursorCheck:
 	mov AL, [_CursorX]
 	cmp AL, [_ScreenWidth]
 	jb .noChange
-	mov BYTE [_CursorX], 0
+	mov AL, [_OffsetX]
+	mov BYTE [_CursorX], AL
 	inc BYTE [_CursorY]
 	call _GetCursorPtr
 .noChange:
@@ -459,7 +461,8 @@ PrintNewLine:
 	mov AX, KRN_SEG
 	mov DS, AX
 	inc BYTE [_CursorY]
-	mov BYTE [_CursorX], 0
+	mov AL, [_OffsetX]
+	mov BYTE [_CursorX], AL
 	call _GetCursorPtr
 	xor AH, AH
 	mov AL, [_ScreenPage]
@@ -473,6 +476,19 @@ PrintNewLine:
 	pop BP
 	ret
 
+SetCursorOffset: ;void SetCursorOffset(int offset)
+	push BP
+	mov BP, SP
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
+	mov AX, [BP+4]
+	mov [_OffsetX], AL
+	pop DS
+	mov SP, BP
+	pop BP
+	ret 2
+
 SECTION .data
 _UpdateCursor db 0xFF
 _CursorAttribute db 0x0F
@@ -482,6 +498,7 @@ _CursorPtr dw 0
 _ScreenPage db 0
 _ScreenWidth dw 80
 _ScreenHeight dw 25
+_OffsetX db 0
 _PrintChar.specialTable dw 0, 0, 0, 0, 0, 0, 0, 0	;7
 dw _PrintChar.backSpace, _PrintChar.tab, _PrintChar.lineFeed, 0	;11
 dw 0, _PrintChar.return	;13

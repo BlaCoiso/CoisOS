@@ -290,7 +290,7 @@ _RegINTHandler: ;Register an interrupt handler: AX - Interrupt number, CX - Hand
 	pop BP
 	ret
 
-GetStackTrace: ;void GetStackTrace(int FrameBase)
+GetStackTrace: ;void GetStackTrace(int *FrameBase)
 	push BP
 	mov BP, SP
 	push BX
