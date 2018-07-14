@@ -277,6 +277,10 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	je .backspace
 	cmp AX, 0x5300
 	je .delete
+	cmp AX, 0x1C0D
+	je .done
+	cmp AX, 0x5200
+	je .toggleIns
 	cmp AX, 0x4F00
 	je .curEnd
 	cmp AX, 0x4700
@@ -285,10 +289,10 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	je .curLeft
 	cmp AX, 0x4D00
 	je .curRight
-	cmp AX, 0x1C0D
-	je .done
-	cmp AX, 0x5200
-	je .toggleIns
+	cmp AX, 0x4800
+	je .curUp
+	cmp AX, 0x5000
+	je .curDown
 	cmp AL, 0x20
 	jb .keyLoop	;Invalid/unsupported character
 	cmp AL, 126
@@ -327,6 +331,29 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	jz .keyLoop	;No characters after this
 	inc DI
 	call .updateCursor
+	jmp .keyLoop
+.curUp:
+	call GetScreenWidth
+	cmp WORD [BP-2], AX
+	jb .curStart
+	mov CX, DI
+	sub CX, [BP+4]	;Get character count before cursor
+	cmp CX, AX
+	jb .keyLoop
+	sub DI, AX
+	call .updateCursor
+	jmp .keyLoop
+.curDown:
+	call GetScreenWidth
+	cmp WORD [BP-2], AX
+	jb .curEnd
+	mov CX, [BP+4]
+	add CX, [BP-2]
+	sub CX, DI	;Get character count after cursor
+	cmp CX, AX
+	jb .keyLoop
+	add DI, AX
+	call .updateBuffer
 	jmp .keyLoop
 .toggleIns:
 	not BYTE [BP-6]
@@ -374,11 +401,27 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	call .updateBuffer
 	ret
 .updateCursor:
-	;TODO: Properly support line changes
 	mov CX, DI
 	sub CX, [BP+4]	;Get current character count
 	mov AX, [BP-4]
-	add AL, CL
+	xor AH, AH
+	add CX, AX
+	push CX
+	call GetScreenWidth
+	pop CX
+	xchg AX, CX	;AX contains char count + start offset
+	cmp AX, CX
+	jb .skipLineCheck
+	div CL
+	;AH - Cursor offset X
+	;AL - Cursor offset Y
+	add AL, [BP-3]	;Add Y pos
+	xchg AH, AL
+	push AX
+	call SetCursorPos
+	ret
+.skipLineCheck:
+	mov AH, [BP-3]
 	push AX
 	call SetCursorPos
 	ret
@@ -394,6 +437,21 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	mov AX, [BP+4]
 	push AX
 	call PrintString
+	call GetCursorPos
+	push AX
+	call GetScreenHeight
+	pop CX
+	dec AL
+	cmp CH, AL
+	jb .skipScroll
+	push CX
+	call GetScreenWidth
+	pop CX
+	dec AL
+	cmp CL, AL
+	jb .skipScroll
+	dec BYTE [BP-3]
+.skipScroll:
 	mov AL, ' '
 	call _PrintChar
 	call .updateCursor
@@ -490,12 +548,12 @@ StringCopy: ;void StringCopy(char *dest, char *source)
 	pop BP
 	ret 4
 
-DrawBox: ;void DrawBox(int x, int y, int width, int height, int thick)
+DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	;[BP+4] - x
 	;[BP+6] - y
 	;[BP+8] - width
 	;[BP+10]- height
-	;[BP+12]- thick
+	;[BP+12]- box
 	push BP
 	mov BP, SP
 	sub SP, 4
@@ -506,13 +564,14 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int thick)
 	mov AX, KRN_SEG
 	mov DS, AX
 	mov AX, [BP+12]
-	test AX, AX
-	jz .noThick
-	mov BX, _ThickBox
-	jmp .continue
-.noThick:
-	mov BX, _SmallBox
-.continue:
+	cmp AL, 3
+	jb .skipFix
+	xor AL, AL
+.skipFix:
+	mov BX, BoxChr_size
+	mul BL
+	add AX, _SmallBox
+	mov BX, AX
 	call GetCursorPos
 	mov [BP-2], AX
 	xor AX, AX
@@ -592,6 +651,7 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int thick)
 SECTION .data
 _SmallBox db 0xDA, 0xBF, 0xC0, 0xD9, 0xC4, 0xB3 ;UL, UR, DL, DR, HB, VB
 _ThickBox db 0xC9, 0xBB, 0xC8, 0xBC, 0xCD, 0xBA
+_ASCIIBox db '/',  '\',  '\',  '/',  '-',  '|'
 _HexPrefix db '0x',0
 
 STRUC BoxChr

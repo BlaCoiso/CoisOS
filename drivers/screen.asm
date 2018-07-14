@@ -489,6 +489,34 @@ SetCursorOffset: ;void SetCursorOffset(int offset)
 	pop BP
 	ret 2
 
+ScrollScreen: ;void ScrollScreen(int lines)
+	push BP
+	mov BP, SP
+	push DS
+	push FS
+	mov AX, KRN_SEG
+	mov DS, AX
+	xor AH, AH
+	mov AL, [_ScreenPage]
+	shl AX, 8	;Each screen page segment has an offset of 0x100
+	add AX, VGA_SEG
+	mov FS, AX
+	mov CX, [BP+4]
+.loop:
+	test CX, CX
+	jz .end
+	dec CX
+	push CX
+	call _ScreenScroll
+	pop CX
+	jmp .loop
+.end:
+	pop FS
+	pop DS
+	mov SP, BP
+	pop BP
+	ret 2
+
 SECTION .data
 _UpdateCursor db 0xFF
 _CursorAttribute db 0x0F

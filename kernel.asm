@@ -154,11 +154,11 @@ dw SetBackgroundColor, DisableCursorUpdate, EnableCursorUpdate, SetScreenPage, C
 dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
 dw DumpMemory, GetStackTrace, EmptyCall, EmptyCall, EmptyCall
 
-dw DrawBox, SetCursorOffset, EmptyCall, EmptyCall, EmptyCall
+dw DrawBox, SetCursorOffset, ScrollScreen, EmptyCall, EmptyCall
 
 krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2
 dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0
 dw 1, 1, 2, 3, 2, 1, 0, 0, 1, 0
 dw 1, 1, 3, 3, 3, 3, 1, 0, 0, 0
-dw 5, 1, 0, 0, 0
-KernelCallCount EQU 42
+dw 5, 1, 1, 0, 0
+KernelCallCount EQU 43

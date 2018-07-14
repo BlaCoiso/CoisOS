@@ -47,3 +47,4 @@ GetStackTrace EQU 36
 ;String/Screen Calls (v2)
 DrawBox EQU 40
 SetCursorOffset EQU 41
+ScrollScreen EQU 42

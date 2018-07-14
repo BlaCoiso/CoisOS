@@ -18,7 +18,7 @@ void StringCopy(char *dest, char *source);
 int GetKey();
 void ReadStringSafe(char *buffer, int maxLength);
 void ReadString(char *buffer);
-void DrawBox(int x, int y, int width, int height, int thick);
+void DrawBox(int x, int y, int width, int height, int box);
 
 //Screen calls
 int GetCursorPos();
@@ -33,6 +33,7 @@ void EnableCursorUpdate();
 void SetScreenPage(int page);
 void ClearScreen();
 void SetCursorOffset(int offset);
+void ScrollScreen(int lines);
 
 //Filesystem calls
 int FindFile(char *filename);
