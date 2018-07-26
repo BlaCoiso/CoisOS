@@ -13,6 +13,11 @@
             "name": "test.bin",
             "path": "test.bin",
             "flags": 0
+        },
+        {
+            "name": "system.bin",
+            "path": "system.bin",
+            "flags": 0
         }
     ]
 }

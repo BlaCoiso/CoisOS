@@ -48,3 +48,6 @@ GetStackTrace EQU 36
 DrawBox EQU 40
 SetCursorOffset EQU 41
 ScrollScreen EQU 42
+SubStringCopy EQU 43
+StringConcat EQU 44
+PrintStringL EQU 45

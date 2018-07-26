@@ -137,11 +137,11 @@ EmptyCall: ret
 
 ;DATA
 SECTION .data
-InitStr db 'Initializing kernel...', 0xD, 0xA, 0
-TestStr db 'Loading test program...', 0xD, 0xA, 0
-TestFname db 'test.bin', 0
-ReadFailStr db 'Failed to find/load test program.', 0xD, 0xA, 0
-TestDoneStr db 'Returned from test program. Press any key to reboot', 0xD, 0xA, 0
+InitStr db 'Initializing kernel...', 0xA, 0
+TestStr db 'Loading system executable...', 0xA, 0
+TestFname db 'system.bin', 0
+ReadFailStr db 'Failed to find/load system executable.', 0xA, 0
+TestDoneStr db 'Returned from system console. Press any key to reboot', 0xA, 0
 krnCallTable dw ReadSector, WriteSector, StringLength, PrintString, PrintChar
 dw PrintByteHex, PrintHex, PrintNewLine, UInt2Str, Int2Str
 
@@ -154,11 +154,12 @@ dw SetBackgroundColor, DisableCursorUpdate, EnableCursorUpdate, SetScreenPage, C
 dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
 dw DumpMemory, GetStackTrace, EmptyCall, EmptyCall, EmptyCall
 
-dw DrawBox, SetCursorOffset, ScrollScreen, EmptyCall, EmptyCall
+dw DrawBox, SetCursorOffset, ScrollScreen, SubStringCopy, StringConcat
+dw PrintStringL, EmptyCall, EmptyCall, EmptyCall, EmptyCall
 
 krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2
 dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0
 dw 1, 1, 2, 3, 2, 1, 0, 0, 1, 0
 dw 1, 1, 3, 3, 3, 3, 1, 0, 0, 0
-dw 5, 1, 1, 0, 0
-KernelCallCount EQU 43
+dw 5, 1, 1, 3, 2, 2, 0, 0, 0, 0
+KernelCallCount EQU 46

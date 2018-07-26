@@ -1,21 +1,23 @@
-0x0 - 0x3FF: IVT
-0x400 - 0x4FF: BDA
-0x500 - 0x7BFF: Unused - Free
-0x7C00 - 0x7DFF: Boot sector
-0x7E00 - 0x7FFFF: Unused - Free
+0x0     - 0x3FF: IVT
+0x400   - 0x4FF: BDA
+0x500   - 0x7BFF: Unused - Free
+0x7C00  - 0x7DFF: Boot sector
+0x7E00  - 0x7FFFF: Unused - Free
 0x80000 - 0x9FBFF: Partially free; check EBDA size before use
 0x9FC00 - 0x9FFFF: EBDA
 0xA0000 - 0xFFFFF: VRAM, ROM, VBIOS/BIOS, HW Data, etc (unusable) 
 
 ===================== OS Memory Map =====================
-0x500 -	0x6FF:	Boot sector copy, used for disk info stuff
-0x700 -	0x8FF:	System data area (SDA), contains data required for the OS
-0x900 -	0x7BFF:	Reserved for stack (29440 bytes)
-0x7C00 -0x7DFF:	Starts with boot sector, later will have Kernel
-0x7E00 -0x9FFF:	Reserved for Kernel
-0xA000 -0xA3FF:	FAT Copy
-0xA400 -0xA7FF: Root Dir Copy
-0xA800 -0xABFF: SubDir Copy
+0x500 - 0x6FF:	Boot sector copy, used for disk info stuff
+0x700 - 0x8FF:	System data area (SDA), contains data required for the OS
+0x900 - 0x7BFF:	Reserved for stack (29440 bytes)
+0x7C00- 0x7DFF:	Starts with boot sector, later will have Kernel
+0x7E00- 0x9FFF:	Reserved for Kernel
+0xA000- 0xA3FF:	FAT Copy
+0xA400- 0xA7FF: Root Dir Copy
+0xA800- 0xABFF: SubDir Copy
+0xAC00- 0x????: System (Command Interpreter)
+0x????- 0x????: Loaded Program
 
 ===================== SDA Structure =====================
 0x700 - 0x70F (16 Bytes): DAP (Disk Access Packet)

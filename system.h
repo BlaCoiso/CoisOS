@@ -14,11 +14,14 @@ void PrintInt(signed int value);
 void PrintTitle(char *string);
 void MemoryCopy(void *dest, void *source, int length);
 void StringCopy(char *dest, char *source);
+void SubStringCopy(char *dest, char *source, char *length);
+void StringConcat(char *dest, char *source);
+void DrawBox(int x, int y, int width, int height, int box);
+void PrintStringL(char *string, int length);
 
 int GetKey();
 void ReadStringSafe(char *buffer, int maxLength);
 void ReadString(char *buffer);
-void DrawBox(int x, int y, int width, int height, int box);
 
 //Screen calls
 int GetCursorPos();

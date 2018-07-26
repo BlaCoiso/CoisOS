@@ -520,7 +520,7 @@ MemoryCopy: ;void MemoryCopy(void *dest, void *source, int length)
 	mov DI, [BP+4]
 	mov CX, [BP+8]	;Load length
 	test CL, 1
-	jz .noOpt
+	jnz .noOpt
 	shr CX, 1	;Optimization: Move words instead of bytes, executes faster
 	rep movsw
 	jmp .end
@@ -538,6 +538,7 @@ StringCopy: ;void StringCopy(char *dest, char *source)
 	mov AX, [BP+6]	;Load source string pointer
 	push AX
 	call StringLength
+	inc AX
 	push AX
 	mov AX, [BP+6]
 	push AX
@@ -645,6 +646,53 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	mov SP, BP
 	pop BP
 	ret 10
+
+SubStringCopy: ;void SubStringCopy(char *dest, char *source, char *length)
+	push BP
+	mov BP, SP
+	mov AX, [BP+6]
+	push AX
+	call StringLength
+	mov CX, [BP+8]
+	cmp CX, AX
+	ja .copy
+	push CX
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	call MemoryCopy
+	push DI
+	mov DI, [BP+4]
+	add DI, [BP+8]
+	mov BYTE [DI], 0
+	pop DI
+	jmp .end
+.copy:
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	call StringCopy
+.end:
+	mov SP, BP
+	pop BP
+	ret 6
+
+StringConcat: ;void StringConcat(char *dest, char *source)
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	push AX
+	call StringLength
+	add AX, [BP+4]
+	mov CX, [BP+6]
+	push CX
+	push AX
+	call StringCopy
+	mov SP, BP
+	pop BP
+	ret 4
 
 %include "drivers/screen.asm"
 

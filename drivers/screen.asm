@@ -271,6 +271,8 @@ _PrintChar:
 .special:
 	cmp AL, 13
 	ja .end	;nothing to do
+	sub AL, 8
+	jb .end	;char won't be printed
 	push BX
 	xor BH, BH
 	mov BL, AL
@@ -517,6 +519,41 @@ ScrollScreen: ;void ScrollScreen(int lines)
 	pop BP
 	ret 2
 
+PrintStringL: ;void PrintStringL(char *string, int length)
+	push BP
+	mov BP, SP
+	push SI
+	mov SI, [BP+4]
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
+	mov BYTE [_UpdateCursor], 0
+	call _GetCursorPtr
+	pop DS
+	mov CX, [BP+6]
+.loop:
+	test CX, CX
+	jz .end
+	dec CX
+	lodsb
+	test AL, AL	;Don't print after end of string
+	jz .end
+	call _PrintChar
+	jmp .loop
+.end:
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
+	mov BYTE [_UpdateCursor], 0xFF
+	call _UpdateCursorPos
+	pop DS
+	pop SI
+	mov SP, BP
+	pop BP
+	ret 4
+
+
+
 SECTION .data
 _UpdateCursor db 0xFF
 _CursorAttribute db 0x0F
@@ -527,6 +564,5 @@ _ScreenPage db 0
 _ScreenWidth dw 80
 _ScreenHeight dw 25
 _OffsetX db 0
-_PrintChar.specialTable dw 0, 0, 0, 0, 0, 0, 0, 0	;7
-dw _PrintChar.backSpace, _PrintChar.tab, _PrintChar.lineFeed, 0	;11
-dw 0, _PrintChar.return	;13
+_PrintChar.specialTable dw _PrintChar.backSpace, _PrintChar.tab
+dw _PrintChar.lineFeed, 0, 0, _PrintChar.return	;13
