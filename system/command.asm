@@ -27,93 +27,95 @@ HandleCommand: ;void HandleCommand()
 	xor DX, DX
 	mov [BP-4], DX
 	mov [BP-6], DX
-	or DL, 1	;Ignore spaces at start
+	or DL, 8	;Ignore spaces at start
 .parserLoop:
 	;Parser state (DX):
-	; 1 - last char was space
-	; 2 - next char is escaped (some\ argument)
-	; 4 - single quote wrapping ('long argument')
-	; 8 - double quote wrapping ("very long argument")
-	; 16- last character made new token
-	; 32- next character can't make new token
+	; 1 - next char is escaped (some\ argument)
+	; 2 - single quote wrapping ('long argument')
+	; 4 - double quote wrapping ("very long argument")
+	; 8 - last character made new token
+	; 16- next character can't make new token
+	; 32- closing quote makes two tokens
 	lodsb
 	test AL, AL
 	jz .parserEnd
-	and DL, ~32
-	test DL, 16
-	jz .tokenAllow
-	or DL, 32
 	and DL, ~16
+	test DL, 8
+	jz .tokenAllow
+	or DL, 16
 .tokenAllow:
-	test DL, 2
+	and DL, ~8
+	test DL, 1
 	jnz .skipParse
 	cmp AL, '\'
 	jne .noEscape
 	call .shiftBuf
-	or DL, 2
+	dec SI
+	or DL, 1
 	jmp .parserLoop
 .noEscape:
 	cmp AL, ' '
 	jne .noSpace
-	test DL, 12	;Check if arguments are inside quotes
+	test DL, 6	;Check if arguments are inside quotes
 	jnz .parserLoop
-	test DL, 33	;Check if argument count can be incremented
+	test DL, 16	;Check if argument count can be incremented
 	jnz .skipSArgC
 	inc WORD [BP-6]
 .skipSArgC:
-	or DL, 17
+	or DL, 8
 	mov BYTE [SI-1], 0	;Split token
 	jmp .parserLoop
 .noSpace:
-	and DL, ~1
 	cmp AL, '"'
 	jne .noDQuote
-	test DL, 4
+	test DL, 2
 	jnz .parserLoop
-	xor DL, 8
-	test DL, 40
+	xor DL, 4
+	test DL, 4
 	jnz .tempQ
+.endQ:
 	inc WORD [BP-6]
-	or DL, 16
+	or DL, 8
 	mov BYTE [SI-1], 0
 	push SI
 	mov SI, [BP-4]
 	mov BYTE [SI], 0
 	pop SI
-	jmp .parserLoop
+	test DL, 32
+	jz .parserLoop
+	and DL, ~32
+	inc WORD [BP-6]
 .tempQ:
 	mov [BP-4], SI
 	dec WORD [BP-4]
+	test DL, 16
+	jnz .parserLoop
+	or DL, 32
 	jmp .parserLoop
 .noDQuote:
 	cmp AL, "'"
 	jne .parserLoop
-	test DL, 8
+	test DL, 4
 	jnz .parserLoop
-	xor DL, 4
-	test DL, 36
+	xor DL, 2
+	test DL, 2
 	jnz .tempQ
-	inc WORD [BP-6]
-	or DL, 16
-	mov BYTE [SI-1], 0
-	push SI
-	mov SI, [BP-4]
-	mov BYTE [SI], 0
-	pop SI
-	jmp .parserLoop
+	jmp .endQ
 .skipParse:
-	and DL, ~2
+	and DL, ~1
 	jmp .parserLoop
 .parserEnd:
-	test DL, 12
+	test DL, 6
 	jz .skipSeekBack
-	and DL, ~12
+	and DL, ~6
 	mov SI, [BP-4]
 	inc SI
 	jmp .parserLoop
 .skipSeekBack:
-	test DL, 48
+	test DL, 8
 	jnz .skipEndToken
+	xor DL, 17
+	jz .skipEndToken
 	inc WORD [BP-6]
 .skipEndToken:
 	mov AX, [BP-6]
