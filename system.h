@@ -44,6 +44,7 @@ int FindFile8_3(char *filename8_3);
 bool ReadFile(char *filename, void *buffer, int segment);
 bool ReadFile8_3(char *filename8_3, void *buffer, int segment);
 void ReadFileEntry(int *rootDirEntry, void *buffer, int segment);
+int GetFileCount();
 
 //Disk calls
 void ReadSector(int sector, int count, void *buffer, int segment);

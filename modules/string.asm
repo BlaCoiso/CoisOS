@@ -514,6 +514,9 @@ _ChrToUppercase:	;Converts character in AL to uppercase
 MemoryCopy: ;void MemoryCopy(void *dest, void *source, int length)
 	push BP
 	mov BP, SP
+	push ES
+	push DS
+	pop ES	;Make sure both segments are equal
 	push SI
 	push DI
 	mov SI, [BP+6]
@@ -528,6 +531,7 @@ MemoryCopy: ;void MemoryCopy(void *dest, void *source, int length)
 .end:
 	pop DI
 	pop SI
+	pop ES
 	mov SP, BP
 	pop BP
 	ret 6
@@ -655,18 +659,15 @@ SubStringCopy: ;void SubStringCopy(char *dest, char *source, char *length)
 	call StringLength
 	mov CX, [BP+8]
 	cmp CX, AX
-	ja .copy
+	jb .lenOk
+	mov CX, AX
+.lenOk:
 	push CX
 	mov AX, [BP+6]
 	push AX
 	mov AX, [BP+4]
 	push AX
 	call MemoryCopy
-	push DI
-	mov DI, [BP+4]
-	add DI, [BP+8]
-	mov BYTE [DI], 0
-	pop DI
 	jmp .end
 .copy:
 	mov AX, [BP+6]

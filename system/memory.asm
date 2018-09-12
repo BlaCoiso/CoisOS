@@ -45,8 +45,8 @@ MemAlloc: ;void *MemAlloc(int size)
 	mov CX, [BX+AllocHeader.size]
 	test CX, CX
 	jz .createEntry
-	mov AX, [BX+AllocHeader.active]
-	test AX, AX
+	mov AL, [BX+AllocHeader.active]
+	test AL, AL
 	jnz .skipEntry	;Entry is in use
 	mov AX, [BP+4]
 	cmp CX, AX

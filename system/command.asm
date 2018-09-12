@@ -152,17 +152,17 @@ HandleCommand: ;void HandleCommand()
 	inc SI
 	jmp .tokenizeLoop
 .tokenizeEnd:
-    push BX
-    mov BX, [BP-4]
-    mov AX, [BX]
-    pop BX
-    push AX
-    call FindCommand
-    test AX, AX
-    jz .noCommand
 	push BX
-    mov BX, AX
-    mov CX, [BX+CMD.exec]
+	mov BX, [BP-4]
+	mov AX, [BX]
+	pop BX
+	push AX
+	call FindCommand
+	test AX, AX
+	jz .noCommand
+	push BX
+	mov BX, AX
+	mov CX, [BX+CMD.exec]
 	pop BX
 	mov AX, [BP-4]
 	push AX
@@ -225,17 +225,17 @@ SetUpperCase: ;void SetUpperCase(char *string)
 	ret 2
 
 FindCommand: ;CMD *FindCommand(char *cmdName)
-    push BP
-    mov BP, SP
+	push BP
+	mov BP, SP
 	sub SP, 2
 	;[BP-2] - Temp command name buffer
-    push BX
-    push SI
-    push DI
-    push ES
-    mov AX, DS
-    mov ES, AX
-    mov BX, cmdTable
+	push BX
+	push SI
+	push DI
+	push ES
+	mov AX, DS
+	mov ES, AX
+	mov BX, cmdTable
 	mov AX, [BP+4]
 	push AX
 	push StringLength
@@ -254,23 +254,23 @@ FindCommand: ;CMD *FindCommand(char *cmdName)
 	call SetUpperCase
 .loop:
 	mov SI, [BP-2]
-    mov DI, [BX+CMD.name]
-    test DI, DI
-    jz .findAlias
-    push SI
-    push StringLength
-    call KernelCall
-    mov CX, AX
-    inc CX
-    repe cmpsb
+	mov DI, [BX+CMD.name]
+	test DI, DI
+	jz .findAlias
+	push SI
+	push StringLength
+	call KernelCall
+	mov CX, AX
+	inc CX
+	repe cmpsb
 	jne .nextCmd
-    test CX, CX
-    jnz .nextCmd
-    mov AX, BX
-    jmp .end
+	test CX, CX
+	jnz .nextCmd
+	mov AX, BX
+	jmp .end
 .nextCmd:
-    add BX, CMD_size
-    jmp .loop
+	add BX, CMD_size
+	jmp .loop
 .findAlias:
 	mov BX, aliasTable
 .aliasLoop:
@@ -279,13 +279,13 @@ FindCommand: ;CMD *FindCommand(char *cmdName)
 	test DI, DI
 	jz .notF
 	push SI
-    push StringLength
-    call KernelCall
-    mov CX, AX
-    inc CX
-    repe cmpsb
+	push StringLength
+	call KernelCall
+	mov CX, AX
+	inc CX
+	repe cmpsb
 	jne .nextAlias
-    test CX, CX
+	test CX, CX
 	jnz .nextAlias
 	mov AX, [BX+CMD_AL.ptr]
 	jmp .end
@@ -293,37 +293,37 @@ FindCommand: ;CMD *FindCommand(char *cmdName)
 	add BX, CMD_AL_size
 	jmp .aliasLoop
 .notF:
-    xor AX, AX
+	xor AX, AX
 .end:
 	push AX
 	mov AX, [BP-2]
 	push AX
 	call MemFree
 	pop AX
-    pop ES
-    pop DI
-    pop SI
-    pop BX
-    mov SP, BP
-    pop BP
-    ret 2
+	pop ES
+	pop DI
+	pop SI
+	pop BX
+	mov SP, BP
+	pop BP
+	ret 2
 
 HelpCommand: ;void HelpCommand(int argc, char *argv[])
-    push BP
-    mov BP, SP
+	push BP
+	mov BP, SP
 	sub SP, 2
 	mov BYTE [BP-2], 0
 	;[BP-2]: Command has usage (bool)
-    mov CX, [BP+4]
-    cmp CX, 1
-    ja .getCmdHelp
-    push helpCmdStr1
-    push PrintString
-    call KernelCall
-    push BX
+	mov CX, [BP+4]
+	cmp CX, 1
+	ja .getCmdHelp
+	push helpCmdStr1
+	push PrintString
+	call KernelCall
+	push BX
 	mov BX, cmdTable
 .cmdListLoop:
-    mov AX, [BX+CMD.name]
+	mov AX, [BX+CMD.name]
 	test AX, AX
 	jz .listEnd
 	mov DX, [BX+CMD.desc]
@@ -347,8 +347,8 @@ HelpCommand: ;void HelpCommand(int argc, char *argv[])
 	add BX, CMD_size
 	jmp .cmdListLoop
 .listEnd:
-    pop BX
-    jmp .end
+	pop BX
+	jmp .end
 .getCmdHelp:
 	push BX
 	mov BX, [BP+6]
@@ -415,9 +415,9 @@ HelpCommand: ;void HelpCommand(int argc, char *argv[])
 	push PrintString
 	call KernelCall
 .end:
-    mov SP, BP
-    pop BP
-    ret 4
+	mov SP, BP
+	pop BP
+	ret 4
 
 SECTION .data
 STRUC CMD

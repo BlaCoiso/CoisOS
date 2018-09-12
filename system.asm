@@ -57,7 +57,7 @@ CommandLoop:
 	pop ES
 	pop DI
 .skipEmpty:
-	push 100
+	push 99
 	push CmdBuffer
 	push ReadStringSafe
 	call KernelCall
@@ -124,6 +124,49 @@ ExitCommand:
 	mov BYTE [canExit], 0xFF
 	ret 4
 
+FileList:
+	push BP
+	mov BP, SP
+	push GetFileCount
+	call KernelCall
+	;TODO: Allocate buffer, request list and display
+	push AX
+	push PrintUInt
+	call KernelCall	;This just prints the file count for now
+	push PrintNewLine
+	call KernelCall
+	mov SP, BP
+	pop BP
+	ret 4
+
+RunTestProg:
+	push BP
+	mov BP, SP
+	;TODO: Somehow give args to the program
+	push 0x1000
+	push 0	;0x1000:0 | 0x10000
+	push rtestProgName
+	push ReadFile
+	call KernelCall
+	test AX, AX
+	jnz .fail
+	pusha
+	push DS
+	mov AX, 0x1000
+	mov DS, AX
+	call 0x1000:0
+	pop DS
+	popa
+	jmp .end
+.fail:
+	push rtestFailStr
+	push PrintString
+	call KernelCall
+.end:
+	mov SP, BP
+	pop BP
+	ret 4
+
 %include "system/command.asm"
 
 SECTION .data
@@ -135,6 +178,8 @@ canExit db 0
 cmdTable	dw helpCmdName, HelpCommand, helpCmdDesc, helpCmdUse
 	dw testCmdName, TestCommand, testCmdDesc, testCmdUse
 exitCmd 	dw exitCmdName, ExitCommand, exitCmdDesc, 0
+	dw flistCmdName, FileList, flistCmdDesc, 0
+	dw rtestCmdName, RunTestProg, rtestCmdDesc, 0
 	dw 0, 0, 0, 0
 
 aliasTable dw exitCmdName1, exitCmd, 0, 0
@@ -150,5 +195,13 @@ testCmdUse db 'arguments...', 0
 exitCmdName db 'EXIT', 0
 exitCmdName1 db 'QUIT', 0
 exitCmdDesc db 'Exits the command line interpreter', 0
+
+flistCmdName db 'LIST', 0
+flistCmdDesc db 'Lists the files in the current directory', 0
+
+rtestCmdName db 'RUNTEST', 0
+rtestCmdDesc db 'Runs the test program', 0
+rtestFailStr db 'Failed to load test program.', 0xA, 0
+rtestProgName db 'test.bin', 0
 
 %include "system/memory.asm"

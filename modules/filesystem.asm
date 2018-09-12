@@ -75,6 +75,8 @@ _WriteRootDir:
 	pop BP
 	ret
 
+;TODO: Add support for subdirectories
+
 FindFile: ;int FindFile(char* filename)
 	;Returns FFFF for not found, Root Dir Buffer Pointer if found (FATRD_SEG:PTR)
 	push BP
@@ -469,6 +471,129 @@ _From8_3Name: ;void _From8_3Name(char *name8_3)
 	mov SP, BP
 	pop BP
 	ret 2
+
+GetFileCount: ;int GetFileCount()
+	push BP
+	mov BP, SP
+	push FS
+	push ES
+	push BX
+	mov AX, SDA_SEG
+	mov FS, AX	;Load SDA
+	mov AX, FATRD_SEG
+	mov ES, AX	;Set FAT Root Dir Segment
+	cmp WORD [FS:SDA.cfrds], 0
+	je .skipLoad	;First sector already loaded, saves some time and I/O
+	mov WORD [FS:SDA.cfrds], 0
+	call _LoadRootDir
+.skipLoad:
+	xor CX, CX
+	xor BX, BX
+.countLoop:
+	mov AL, [ES:BX+FSEnt.name]
+	test AL, AL
+	jz .countEnd
+	cmp AL, 0xE5	;Deleted, file doesn't actually exist
+	je .nextFile
+	mov AL, [ES:BX+FSEnt.attr]
+	test AL, 0x52
+	jnz .nextFile	;File might not be a file or is hidden
+	inc CX
+.nextFile:
+	add BX, FSEnt_size
+	cmp BX, 1024
+	jb .countLoop
+	add WORD [FS:SDA.cfrds], 2
+	push CX
+	call _LoadRootDir
+	pop CX
+	xor BX, BX
+	jmp .countLoop
+.countEnd:
+	mov AX, CX
+	pop BX
+	pop ES
+	pop FS
+	mov SP, BP
+	pop BP
+	ret
+
+ListFiles: ;void ListFiles(char *buffer, int start, int count)
+	push BP
+	mov BP, SP
+	sub SP, 0
+	push FS
+	push ES
+	push BX
+	push DI
+	mov DI, [BP+4]
+	mov AX, SDA_SEG
+	mov FS, AX	;Load SDA
+	mov AX, FATRD_SEG
+	mov ES, AX	;Set FAT Root Dir Segment
+	cmp WORD [FS:SDA.cfrds], 0
+	je .skipLoad	;First sector already loaded, saves some time and I/O
+	mov WORD [FS:SDA.cfrds], 0
+	call _LoadRootDir
+.skipLoad:
+	xor BX, BX
+	mov CX, [BP+6]
+	mov DX, [BP+8]
+.listLoop:
+	mov AL, [ES:BX+FSEnt.name]
+	test AL, AL
+	jz .listEnd
+	cmp AL, 0xE5	;Deleted, file doesn't actually exist
+	je .nextFile
+	mov AL, [ES:BX+FSEnt.attr]
+	test AL, 0x52
+	jnz .nextFile	;File might not be a file or is hidden
+	test CX, CX
+	jz .noSkip
+	dec CX
+	jmp .nextFile
+.noSkip:
+	test DX, DX
+	jz .listEnd
+	dec DX
+	push DS
+	mov AX, ES
+	mov DS, AX
+	lea AX, [ES:BX+FSEnt.name]
+	push CX
+	push DX
+	push AX
+	call _From8_3Name
+	pop DX
+	pop CX
+	pop DS
+	push AX
+	push DI
+	push AX
+	call StringLength
+	add DI, AX
+	mov BYTE [DI], 0
+	inc DI
+	call StringCopy
+	;TODO: Check if this actually works
+.nextFile:
+	add BX, FSEnt_size
+	cmp BX, 1024
+	jb .listLoop
+	add WORD [FS:SDA.cfrds], 2
+	push CX
+	call _LoadRootDir
+	pop CX
+	xor BX, BX
+	jmp .listLoop
+.listEnd:
+	pop DI
+	pop BX
+	pop ES
+	pop FS
+	mov SP, BP
+	pop BP
+	ret 6
 
 SECTION .bss
 _8_3NameBuf resb 12
