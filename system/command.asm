@@ -8,7 +8,6 @@ HandleCommand: ;void HandleCommand()
 	;[BP-2] - Copied buffer pointer
 	;[BP-4] - Parser temp token/Argument array
 	;[BP-6] - Argument count
-	push DI
 	push SI
 	push CmdBuffer
 	push StringLength
@@ -107,7 +106,7 @@ HandleCommand: ;void HandleCommand()
 .parserEnd:
 	test DL, 6
 	jz .skipSeekBack
-	and DL, ~6
+	and DL, ~38
 	mov SI, [BP-4]
 	inc SI
 	jmp .parserLoop
@@ -121,40 +120,18 @@ HandleCommand: ;void HandleCommand()
 	mov AX, [BP-6]
 	test AX, AX
 	jz .bufferCleanup
-	shl AX, 1
 	push AX
-	call MemAlloc
-	mov [BP-4], AX
-	mov DI, AX
 	push CmdBuffer
 	push StringLength
 	call KernelCall
-	mov CX, AX
-	mov SI, [BP-2]
-	xor DL, DL
-.tokenizeLoop:
-	test CX, CX
-	jz .tokenizeEnd
-	dec CX
-	mov AL, [SI]
-	test AL, AL
-	jz .skipEmpty
-	test DL, DL
-	jnz .nextChar
-	or DL, 1
-	mov [DI], SI
-	inc DI
-	inc DI
-	jmp .nextChar
-.skipEmpty:
-	xor DL, DL
-.nextChar:
-	inc SI
-	jmp .tokenizeLoop
-.tokenizeEnd:
+	push AX
+	mov AX, [BP-2]
+	push AX
+	call GetTokenArray
+	mov [BP-4], AX
 	push BX
-	mov BX, [BP-4]
-	mov AX, [BX]
+	mov BX, AX
+	mov AX, [BX]	;AX = Address of first token (command name)
 	pop BX
 	push AX
 	call FindCommand
@@ -184,7 +161,6 @@ HandleCommand: ;void HandleCommand()
 	call MemFree
 .emptyBuf:
 	pop SI
-	pop DI
 	mov SP, BP
 	pop BP
 	ret
@@ -223,6 +199,49 @@ SetUpperCase: ;void SetUpperCase(char *string)
 	mov SP, BP
 	pop BP
 	ret 2
+
+GetTokenArray: ;char **GetTokenArray(char *buffer, int length, int count)
+	push BP
+	mov BP, SP
+	sub SP, 2
+	push SI
+	push DI
+	;[BP-2]: Array pointer
+	mov AX, [BP+8]
+	shl AX, 1
+	push AX
+	call MemAlloc
+	mov [BP-2], AX
+	mov DI, AX
+	mov CX, [BP+6]
+	mov SI, [BP+4]
+	xor DL, DL
+.loop:
+	test CX, CX
+	jz .end
+	dec CX
+	mov AL, [SI]
+	test AL, AL
+	jz .skipEmpty
+	test DL, DL
+	jnz .nextChar
+	or DL, 1
+	mov [DI], SI
+	inc DI
+	inc DI
+	jmp .nextChar
+.skipEmpty:
+	xor DL, DL
+.nextChar:
+	inc SI
+	jmp .loop
+.end:
+	pop DI
+	pop SI
+	mov AX, [BP-2]
+	mov SP, BP
+	pop BP
+	ret 6
 
 FindCommand: ;CMD *FindCommand(char *cmdName)
 	push BP

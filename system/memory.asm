@@ -51,15 +51,19 @@ MemAlloc: ;void *MemAlloc(int size)
 	mov AX, [BP+4]
 	cmp CX, AX
 	jb .skipEntry	;Not enough space
-	jmp .skipEntry
 	add AX, AllocHeader_size+MinAllocSize
 	cmp CX, AX
 	jb .noSplit
 	mov AX, [BP+4]
-	;AX - Target length
-	;BX - Current free block pointer
-	;CX - Current free block length
-	;TODO: Split entry (new length = CX - AX - headerSize)
+	mov [BX+AllocHeader.size], AX
+	push BX
+	add BX, AllocHeader_size
+	add BX, AX
+	sub CX, AX
+	sub CX, AllocHeader_size
+	mov [BX+AllocHeader.size], CX
+	mov BYTE [BX+AllocHeader.active], 0
+	pop BX
 .noSplit:
 	mov BYTE [BX+AllocHeader.active], 1
 	add BX, AllocHeader_size

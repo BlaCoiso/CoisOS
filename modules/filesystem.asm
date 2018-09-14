@@ -518,7 +518,7 @@ GetFileCount: ;int GetFileCount()
 	pop BP
 	ret
 
-ListFiles: ;void ListFiles(char *buffer, int start, int count)
+ListFiles: ;int ListFiles(char *buffer, int start, int count)
 	push BP
 	mov BP, SP
 	sub SP, 0
@@ -556,26 +556,32 @@ ListFiles: ;void ListFiles(char *buffer, int start, int count)
 	test DX, DX
 	jz .listEnd
 	dec DX
+	push CX
+	push DX
+	push SI
+	push ES
+	push DS
 	push DS
 	mov AX, ES
 	mov DS, AX
 	lea AX, [ES:BX+FSEnt.name]
-	push CX
-	push DX
 	push AX
 	call _From8_3Name
+	mov AX, CS
+	mov DS, AX
+	mov SI, _FileNameBuf
+	push SI
+	call StringLength
+	mov CX, AX
+	pop ES
+	rep movsb
+	mov BYTE [ES:DI], 0
+	inc DI
+	pop DS
+	pop ES
+	pop SI
 	pop DX
 	pop CX
-	pop DS
-	push AX
-	push DI
-	push AX
-	call StringLength
-	add DI, AX
-	mov BYTE [DI], 0
-	inc DI
-	call StringCopy
-	;TODO: Check if this actually works
 .nextFile:
 	add BX, FSEnt_size
 	cmp BX, 1024
@@ -587,6 +593,8 @@ ListFiles: ;void ListFiles(char *buffer, int start, int count)
 	xor BX, BX
 	jmp .listLoop
 .listEnd:
+	mov AX, DI
+	sub AX, [BP+4]
 	pop DI
 	pop BX
 	pop ES

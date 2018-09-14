@@ -127,14 +127,70 @@ ExitCommand:
 FileList:
 	push BP
 	mov BP, SP
+	sub SP, 6
+	;[BP-2] - Filename Buffer
+	;[BP-4] - File Count
 	push GetFileCount
 	call KernelCall
-	;TODO: Allocate buffer, request list and display
+	mov [BP-4], AX
+	push AX	;Count (GetTokenArray)
+	push AX ;Count (ListFiles)
+	mov CL, 13
+	mul CL
+	inc AL
 	push AX
-	push PrintUInt
-	call KernelCall	;This just prints the file count for now
+	call MemAlloc	
+	mov [BP-2], AX
+	push 0	;Start
+	push AX	;Buffer
+	push ListFiles
+	call KernelCall
+	push AX	;Length
+	mov AX, [BP-2]
+	push AX	;Buffer
+	call GetTokenArray
+	mov BX, AX
+	push BX
+	push BX
+	push SI
+	xor SI, SI
+	shl WORD [BP-4], 1
+.loop:
+	push GetCursorPos
+	call KernelCall
+	mov CX, SI
+	shl CX, 3
+	and CL, 63
+	mov AL, CL
+	push AX
+	push SetCursorPos
+	call KernelCall
+	mov AX, [BX+SI]
+	inc SI
+	inc SI
+	push AX
+	push PrintString
+	call KernelCall
+	cmp SI, [BP-4]
+	je .end
+	mov AX, SI
+	shr AX, 1
+	mov CL, 5
+	div CL
+	test AH, AH
+	jnz .loop
 	push PrintNewLine
 	call KernelCall
+	jmp .loop
+.end:
+	push PrintNewLine
+	call KernelCall
+	pop SI
+	pop BX
+	call MemFree
+	mov AX, [BP-2]
+	push AX
+	call MemFree
 	mov SP, BP
 	pop BP
 	ret 4
@@ -150,7 +206,7 @@ RunTestProg:
 	call KernelCall
 	test AX, AX
 	jnz .fail
-	pusha
+	pusha	;Make sure registers are saved
 	push DS
 	mov AX, 0x1000
 	mov DS, AX

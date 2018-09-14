@@ -53,3 +53,4 @@ StringConcat EQU 44
 PrintStringL EQU 45
 ;Filesystem Calls (v2)
 GetFileCount EQU 50
+ListFiles EQU 51
