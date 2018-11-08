@@ -248,7 +248,7 @@ PrintUInt: ;void PrintUInt(int value)
 	pop BP
 	ret 2
 
-ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
+ReadStringSafe: ;int ReadStringSafe(char *buffer, int maxLength)
 	;[BP+6] - Max Length
 	;[BP+4] - Buffer pointer
 	push BP
@@ -359,11 +359,13 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	not BYTE [BP-6]
 	jmp .keyLoop
 .done:
-	mov AX, [BP-4]
+	mov AX, [BP-2]
 	mov DI, [BP+4]
 	add DI, AX
+	call .updateCursor
 	xor AX, AX
 	stosb	;Add null byte at the end
+	mov AX, [BP-2]
 	pop DI
 	pop ES
 	mov SP, BP
@@ -492,7 +494,7 @@ ReadStringSafe: ;void ReadStringSafe(char *buffer, int maxLength)
 	pop DI
 	ret
 
-ReadString: ;void ReadString(char *buffer)
+ReadString: ;int ReadString(char *buffer)
 	push BP
 	mov BP, SP
 	mov AX, [BP+4]

@@ -20,8 +20,8 @@ void DrawBox(int x, int y, int width, int height, int box);
 void PrintStringL(char *string, int length);
 
 int GetKey();
-void ReadStringSafe(char *buffer, int maxLength);
-void ReadString(char *buffer);
+int ReadStringSafe(char *buffer, int maxLength);
+int ReadString(char *buffer);
 
 //Screen calls
 int GetCursorPos();
