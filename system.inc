@@ -51,6 +51,8 @@ ScrollScreen EQU 42
 SubStringCopy EQU 43
 StringConcat EQU 44
 PrintStringL EQU 45
+GetScreenWidth EQU 46
+GetScreenHeight EQU 47
 ;Filesystem Calls (v2)
 GetFileCount EQU 50
 ListFiles EQU 51

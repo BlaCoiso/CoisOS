@@ -223,6 +223,11 @@ RunTestProg:
 	pop BP
 	ret 4
 
+ClearCommand:
+	push ClearScreen
+	call KernelCall
+	ret 4
+
 %include "system/command.asm"
 
 SECTION .data
@@ -236,6 +241,7 @@ cmdTable	dw helpCmdName, HelpCommand, helpCmdDesc, helpCmdUse
 exitCmd 	dw exitCmdName, ExitCommand, exitCmdDesc, 0
 	dw flistCmdName, FileList, flistCmdDesc, 0
 	dw rtestCmdName, RunTestProg, rtestCmdDesc, 0
+	dw clearCmdName, ClearCommand, clearCmdDesc, 0
 	dw 0, 0, 0, 0
 
 aliasTable dw exitCmdName1, exitCmd, 0, 0
@@ -259,5 +265,8 @@ rtestCmdName db 'RUNTEST', 0
 rtestCmdDesc db 'Runs the test program', 0
 rtestFailStr db 'Failed to load test program.', 0xA, 0
 rtestProgName db 'test.bin', 0
+
+clearCmdName db 'CLEAR', 0
+clearCmdDesc db 'Clears the screen', 0
 
 %include "system/memory.asm"

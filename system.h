@@ -37,6 +37,8 @@ void SetScreenPage(int page);
 void ClearScreen();
 void SetCursorOffset(int offset);
 void ScrollScreen(int lines);
+int GetScreenWidth();
+int GetScreenHeight();
 
 //Filesystem calls
 int FindFile(char *filename);

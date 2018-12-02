@@ -155,7 +155,7 @@ dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
 dw DumpMemory, GetStackTrace, EmptyCall, EmptyCall, EmptyCall
 
 dw DrawBox, SetCursorOffset, ScrollScreen, SubStringCopy, StringConcat
-dw PrintStringL, EmptyCall, EmptyCall, EmptyCall, EmptyCall
+dw PrintStringL, GetScreenWidth, GetScreenHeight, EmptyCall, EmptyCall
 
 dw GetFileCount, ListFiles, EmptyCall, EmptyCall, EmptyCall
 
