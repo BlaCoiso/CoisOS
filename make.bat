@@ -1,3 +1,5 @@
+@set NASM_PATH=
+
 %NASM_PATH%nasm -f bin bootload.asm -o bootload.bin
 @IF /I "%ERRORLEVEL%" NEQ "0" exit /b %ERRORLEVEL%
 %NASM_PATH%nasm -f bin kernel.asm -o kernel.bin
