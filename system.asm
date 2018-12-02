@@ -134,7 +134,7 @@ FileList:
 	call KernelCall
 	mov [BP-4], AX
 	push AX	;Count (GetTokenArray)
-	push AX ;Count (ListFiles)
+	push AX	;Count (ListFiles)
 	mov CL, 13
 	mul CL
 	inc AL

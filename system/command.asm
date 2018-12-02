@@ -84,6 +84,7 @@ HandleCommand: ;void HandleCommand()
 	jz .parserLoop
 	and DL, ~32
 	inc WORD [BP-6]
+	jmp .parserLoop
 .tempQ:
 	mov [BP-4], SI
 	dec WORD [BP-4]

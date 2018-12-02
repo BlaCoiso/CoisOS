@@ -564,17 +564,50 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	push BP
 	mov BP, SP
 	sub SP, 4
-	;[BP-2] - Old cursor pos
-	;[BP-4] - Current Y
+	;[BP-2] - Old cursor pos / Screen Width
+	;[BP-4] - Current Y / Screen Height
 	push DS
 	push BX
 	mov AX, KRN_SEG
 	mov DS, AX
 	mov AX, [BP+12]
-	cmp AL, 3
+	cmp AL, 4
 	jb .skipFix
 	xor AL, AL
 .skipFix:
+	;TODO: Don't display sides of box if they're outside the screen
+	push AX
+	call GetScreenWidth
+	sub AX, 2
+	mov [BP-2], AX
+	call GetScreenHeight
+	sub AX, 3
+	mov [BP-4], AX
+	mov AX, [BP+4]
+	cmp AX, [BP-2]
+	jb .xPosOK
+	pop AX
+	jmp .end	;x pos outside horizontal bounds
+.xPosOK:
+	mov AX, [BP+6]
+	sub AX, [BP-4]
+	jb .yPosOK
+	pop AX
+	jmp .end	;y pos outside vertical bounds
+.yPosOK:
+	neg AX
+	cmp [BP+10], AX
+	jb .heightOK
+	mov [BP+10], AX
+.heightOK:
+	mov AX, [BP-2]
+	sub AX, [BP+4]
+	cmp [BP+8], AX
+	jb .widthOK
+	mov [BP+8], AX
+.widthOK:
+	pop AX
+	inc WORD [BP+10]
 	mov BX, BoxChr_size
 	mul BL
 	add AX, _SmallBox
@@ -592,16 +625,20 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	mov AL, [BX+BoxChr.UL]
 	call _PrintChar
 	mov CX, [BP+8]
-	sub CX, 2
+	test CX, CX
+	jz .skipLoop1
 .loop1:
 	mov AL, [BX+BoxChr.HB]
 	call _PrintChar
 	dec CX
 	test CX, CX
 	jnz .loop1
-
+.skipLoop1:
 	mov AL, [BX+BoxChr.UR]
 	call _PrintChar
+	mov AX, [BP+10]
+	cmp AL, 1
+	je .skipLoop2
 .loop2:
 	inc BYTE [BP-4]
 	mov AX, [BP-4]
@@ -615,7 +652,7 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	call _PrintChar
 	mov AX, [BP+4]
 	add AX, [BP+8]
-	dec AX
+	inc AX
 	push AX
 	call SetCursorPosXY
 	mov AL, [BX+BoxChr.VB]
@@ -623,7 +660,7 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	mov AX, [BP-4]
 	cmp AX, [BP+10]
 	jb .loop2
-
+.skipLoop2:
 	mov AX, [BP+10]
 	add AX, [BP+6]
 	push AX
@@ -633,20 +670,22 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	mov AL, [BX+BoxChr.DL]
 	call _PrintChar
 	mov CX, [BP+8]
-	sub CX, 2
+	test CX, CX
+	jz .skipLoop3
 .loop3:
 	mov AL, [BX+BoxChr.HB]
 	call _PrintChar
 	dec CX
 	test CX, CX
 	jnz .loop3
-
+.skipLoop3:
 	mov AL, [BX+BoxChr.DR]
 	call _PrintChar
 	mov AX, [BP-2]
 	push AX
 	call SetCursorPos
 	call EnableCursorUpdate
+.end:
 	pop BX
 	pop DS
 	mov SP, BP
@@ -703,6 +742,7 @@ SECTION .data
 _SmallBox db 0xDA, 0xBF, 0xC0, 0xD9, 0xC4, 0xB3 ;UL, UR, DL, DR, HB, VB
 _ThickBox db 0xC9, 0xBB, 0xC8, 0xBC, 0xCD, 0xBA
 _ASCIIBox db '/',  '\',  '\',  '/',  '-',  '|'
+_ASCIIBox2 db '.', '.',  '`',  "'",  '-',  '|'
 _HexPrefix db '0x',0
 
 STRUC BoxChr
