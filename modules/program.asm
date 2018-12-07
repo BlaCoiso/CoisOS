@@ -34,6 +34,8 @@ ExecProgram: ;int ExecProgram(int argc, char* argv[], int startIP, int segment)
 	pusha
 	mov [_ProgStartSP], SP
 	mov [_ProgStartBP], BP
+	mov AX, [_ProgRetDS]
+	push AX
 	mov AX, [BP+6]
 	push AX
 	mov AX, [BP+4]
