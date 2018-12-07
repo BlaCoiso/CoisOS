@@ -3,6 +3,9 @@ SECTION .text
 VGA_SEG EQU 0xB800
 
 _InitScreen:
+	xor AX, AX
+	mov [_ScreenPage], AL
+	mov [_OffsetX], AL
 	call ReadCursorPos
 	ret
 
@@ -558,12 +561,14 @@ PrintStringL: ;void PrintStringL(char *string, int length)
 SECTION .data
 _UpdateCursor db 0xFF
 _CursorAttribute db 0x0F
-_CursorX db 0
-_CursorY db 0
-_CursorPtr dw 0
-_ScreenPage db 0
 _ScreenWidth dw 80
 _ScreenHeight dw 25
-_OffsetX db 0
 _PrintChar.specialTable dw _PrintChar.backSpace, _PrintChar.tab
 dw _PrintChar.lineFeed, 0, 0, _PrintChar.return	;13
+
+SECTION .bss
+_CursorX resb 1
+_CursorY resb 1
+_CursorPtr resw 1
+_ScreenPage resb 1
+_OffsetX resb 1

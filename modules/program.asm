@@ -9,19 +9,11 @@ ExecProgram: ;int ExecProgram(int argc, char* argv[], int startIP, int segment)
 	;[BP+10]- segment
 	push BP
 	mov BP, SP
-	sub SP, 10
+	sub SP, 2
 	;[BP-2] - Return value
-	;[BP-4] - Stack Check Value
-	;[BP-6] - Stack Check Value
-	;[BP-8] - Stack Check Value
-	;[BP-10]- Stack Check Value
 	;TODO: Register interrupt handlers for invalid instructions and other exceptions
 	;TODO: Make sure this doesn't get called if a program is already running
 	;TODO: Allow this to execute more than one program
-	mov WORD [BP-4], PROG_STK_CHK1
-	mov WORD [BP-6], PROG_STK_CHK2
-	mov WORD [BP-8], PROG_STK_CHK3
-	mov WORD [BP-10], PROG_STK_CHK4
 	mov CX, DS
 	mov AX, KRN_SEG
 	mov DS, AX
@@ -32,6 +24,10 @@ ExecProgram: ;int ExecProgram(int argc, char* argv[], int startIP, int segment)
 	mov AL, [_ScreenPage]
 	mov [_ProgRetScrPage], AL
 	pusha
+	push PROG_STK_CHK4
+	push PROG_STK_CHK3
+	push PROG_STK_CHK2
+	push PROG_STK_CHK1
 	mov [_ProgStartSP], SP
 	mov [_ProgStartBP], BP
 	mov AX, [_ProgRetDS]
@@ -48,13 +44,17 @@ ExecProgram: ;int ExecProgram(int argc, char* argv[], int startIP, int segment)
 	mov SP, [_ProgStartSP]
 	mov BP, [_ProgStartBP]
 	mov [BP-2], AX
-	cmp WORD [BP-4], PROG_STK_CHK1
+	pop AX
+	pop BX
+	pop CX
+	pop DX
+	cmp AX, PROG_STK_CHK1
 	jne .stkChkFail
-	cmp WORD [BP-6], PROG_STK_CHK2
+	cmp BX, PROG_STK_CHK2
 	jne .stkChkFail
-	cmp WORD [BP-8], PROG_STK_CHK3
+	cmp CX, PROG_STK_CHK3
 	jne .stkChkFail
-	cmp WORD [BP-10], PROG_STK_CHK4
+	cmp DX, PROG_STK_CHK4
 	je .stkChkOK
 .stkChkFail:
 	call GetCursorAttribute
