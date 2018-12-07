@@ -345,9 +345,9 @@ _ScreenScroll:
 	dec BYTE [_CursorY]
 	call _GetCursorPtr
 	xor DI, DI
-	mov SI, [_ScreenWidth]
+	mov CX, [_ScreenWidth]
+	mov SI, CX
 	shl SI, 1
-	mov CL, [_ScreenWidth]
 	mov AL, [_ScreenHeight]
 	dec AL
 	mul CL
@@ -444,6 +444,7 @@ ClearScreen: ;void ClearScreen()
 	mov CL, [_ScreenWidth]
 	mov AL, [_ScreenHeight]
 	mul CL
+	mov CX, AX
 	xor DI, DI
 	mov AH, [_CursorAttribute]
 	mov AL, ' '

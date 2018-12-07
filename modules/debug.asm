@@ -294,20 +294,28 @@ GetStackTrace: ;void GetStackTrace(int *FrameBase)
 	push BP
 	mov BP, SP
 	push BX
+	push CX
 	mov BX, [BP+4]	;Load frame pointer
+	mov CX, 11	;Show max of 12 frames
 .loop:
 	test BX, BX
 	jz .end
 	cmp BX, [SS:BX]
 	je .end
 	mov AX, [SS:BX+2]	;Load return address of frame
+	push CX
 	push AX
 	call PrintHex
 	mov BX, [SS:BX]
 	push '<'
 	call PrintChar
+	pop CX
+	dec CX
+	test CX, CX
+	jz .end
 	jmp .loop
 .end:
+	pop CX
 	pop BX
 	mov SP, BP
 	pop BP

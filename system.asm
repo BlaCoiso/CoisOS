@@ -198,7 +198,6 @@ FileList:
 RunTestProg:
 	push BP
 	mov BP, SP
-	;TODO: Somehow give args to the program
 	push 0x1000
 	push 0	;0x1000:0 | 0x10000
 	push rtestProgName
@@ -206,13 +205,14 @@ RunTestProg:
 	call KernelCall
 	test AX, AX
 	jnz .fail
-	pusha	;Make sure registers are saved
-	push DS
-	mov AX, 0x1000
-	mov DS, AX
-	call 0x1000:0
-	pop DS
-	popa
+	push 0x1000
+	push 0
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	push ExecProgram
+	call KernelCall
 	jmp .end
 .fail:
 	push rtestFailStr

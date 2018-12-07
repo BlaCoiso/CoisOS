@@ -41,9 +41,10 @@ FindFile8_3 EQU 31
 ReadFile EQU 32
 ReadFile8_3 EQU 33
 ReadFileEntry EQU 34
-;Debug Calls (v1)
+;Debug Calls (v1) / Program Calls (v2)
 DumpMemory EQU 35
 GetStackTrace EQU 36
+ExecProgram EQU 37
 ;String/Screen Calls (v2)
 DrawBox EQU 40
 SetCursorOffset EQU 41

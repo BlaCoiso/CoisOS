@@ -134,6 +134,7 @@ EmptyCall: ret
 %include "modules/disk.asm"
 %include "modules/filesystem.asm"
 %include "modules/debug.asm"
+%include "modules/program.asm"
 
 ;DATA
 SECTION .data
@@ -142,6 +143,7 @@ TestStr db 'Loading system executable...', 0xA, 0
 TestFname db 'system.bin', 0
 ReadFailStr db 'Failed to find/load system executable.', 0xA, 0
 TestDoneStr db 'Returned from system console. Press any key to reboot', 0xA, 0
+
 krnCallTable dw ReadSector, WriteSector, StringLength, PrintString, PrintChar
 dw PrintByteHex, PrintHex, PrintNewLine, UInt2Str, Int2Str
 
@@ -152,7 +154,7 @@ dw PrintTitle, ReadString, ReadStringSafe, MemoryCopy, StringCopy
 dw SetBackgroundColor, DisableCursorUpdate, EnableCursorUpdate, SetScreenPage, ClearScreen
 
 dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
-dw DumpMemory, GetStackTrace, EmptyCall, EmptyCall, EmptyCall
+dw DumpMemory, GetStackTrace, ExecProgram, EmptyCall, EmptyCall
 
 dw DrawBox, SetCursorOffset, ScrollScreen, SubStringCopy, StringConcat
 dw PrintStringL, GetScreenWidth, GetScreenHeight, EmptyCall, EmptyCall
@@ -162,7 +164,7 @@ dw GetFileCount, ListFiles, EmptyCall, EmptyCall, EmptyCall
 krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2
 dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0
 dw 1, 1, 2, 3, 2, 1, 0, 0, 1, 0
-dw 1, 1, 3, 3, 3, 3, 1, 0, 0, 0
+dw 1, 1, 3, 3, 3, 3, 1, 4, 0, 0
 dw 5, 1, 1, 3, 2, 2, 0, 0, 0, 0
 dw 0, 3, 0, 0, 0
 KernelCallCount EQU 52

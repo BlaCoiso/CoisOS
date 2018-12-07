@@ -56,3 +56,6 @@ void WriteSector(int sector, int count, void *buffer, int segment);
 //Debug calls
 void DumpMemory(int addr, int segment, int count);
 void GetStackTrace(int *FrameBase);
+
+//Program calls
+int ExecProgram(int argc, char *argv[], int startIP, int segment);
