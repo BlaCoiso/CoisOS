@@ -488,8 +488,13 @@ SetCursorOffset: ;void SetCursorOffset(int offset)
 	push DS
 	mov AX, KRN_SEG
 	mov DS, AX
-	mov AX, [BP+4]
-	mov [_OffsetX], AL
+	call GetScreenWidth
+	mov CX, [BP+4]
+	cmp CX, AX
+	jae .offsetOK
+	xor CX, CX
+.offsetOK:
+	mov [_OffsetX], CL
 	pop DS
 	mov SP, BP
 	pop BP

@@ -1,4 +1,5 @@
 SECTION .text
+;TODO: Refactor, implement memory management code in kernel and use kernel calls for free/alloc
 
 AllocInit:
 	push BP

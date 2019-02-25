@@ -263,7 +263,6 @@ DiskAttempts db 8
 DiskErrStr1 db 'Disk Error (', 0
 DiskErrStr2 db '): ', 0
 DiskErrStrF db 'FATAL DISK ERROR, HALTING', 0
-DiskErrVal times 4 db 0
 DErr01 db 'Invalid Function/Parameter', 0
 DErr03 db 'Read-only Disk', 0
 DErr04 db 'Sector Not Found/Read Error', 0
@@ -284,3 +283,6 @@ DErrCC db 'Write Fault', 0
 DErrGen db 'Unknown Disk Error', 0
 DErrList dw DErr01, DErrGen, DErr03, DErr04, DErr05, DErr06, DErrGen, DErr08
 dw DErr09, DErr0A, DErr0B, DErr0C
+
+SECTION .bss
+DiskErrVal resb 4

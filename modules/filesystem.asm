@@ -188,6 +188,7 @@ _Get8_3Name:	;[BP+4] = Filename pointer
 	jz .end
 	cmp AL, ' '
 	je .space
+	;TODO: Optimize these checks
 	cmp AL, '#'
 	je .writeChr
 	cmp AL, '$'

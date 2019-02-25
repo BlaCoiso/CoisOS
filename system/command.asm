@@ -149,10 +149,11 @@ HandleCommand: ;void HandleCommand()
 	call CX
 	jmp .bufferCleanup
 .noCommand:
-	push cmdNotFound
-	push PrintString
-	call KernelCall
-	;TODO: Find an executable file with the specified name and execute it
+	mov AX, [BP-4]
+	push AX
+	mov AX, [BP-6]
+	push AX
+	call TryExecProgram
 .bufferCleanup:
 	mov AX, [BP-2]
 	push AX
@@ -451,8 +452,6 @@ STRUC CMD_AL
 .name resw 1
 .ptr resw 1
 ENDSTRUC
-
-cmdNotFound db 'Command not found.', 0xA, 0
 
 helpCmdSep db ' - ', 0
 helpCmdStr1 db 'List of available commands:', 0xA, 0

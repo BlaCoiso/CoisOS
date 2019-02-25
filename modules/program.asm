@@ -118,16 +118,15 @@ ExecProgram: ;int ExecProgram(int argc, char* argv[], int startIP, int segment)
 	jmp .halt	;Make sure processor won't wake up again
 
 SECTION .data
-
 _StkChkCorrupt db 'WARNING: Stack was corrupted. (r)eboot, (c)ontinue, (h)alt', 0
 
 SECTION .bss
-
 PROG_STK_CHK1 EQU 0xB4D8
 PROG_STK_CHK2 EQU 0xDEAD
 PROG_STK_CHK3 EQU 0xCFAA
 PROG_STK_CHK4 EQU 0x3A5F
 
+;TODO: Allow multiple programs to be loaded, make program entry structure, etc
 _ProgRetDS resw 1
 _ProgRetES resw 1
 _ProgRetIP resw 1

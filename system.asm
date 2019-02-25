@@ -228,6 +228,99 @@ ClearCommand:
 	call KernelCall
 	ret 4
 
+TryExecProgram:
+	push BP
+	mov BP, SP
+	push BX
+	mov BX, [BP+6]
+	mov AX, [BX]
+	push AX
+	call FindProgramEntry
+	test AX, AX
+	jnz .execFile
+	push cmdNotFoundStr
+	push PrintString
+	call KernelCall
+	jmp .cleanup
+.execFile:
+	push 0x1000
+	push 0
+	push AX
+	push ReadFileEntry
+	call KernelCall
+	push 0x1000
+	push 0
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	push ExecProgram
+	call KernelCall
+.cleanup:
+	pop BX
+	mov SP, BP
+	pop BP
+	ret 4
+
+FindProgramEntry:
+	push BP
+	mov BP, SP
+	sub SP, 4
+	;[BP-2] - Filename buffer
+	;[BP-4] - File Entry ID
+	mov AX, [BP+4]
+	push AX
+	push AX
+	push StringLength
+	call KernelCall
+	add AX, 5	;Reserve 4 bytes for extension and 1 for null terminator
+	push AX
+	call MemAlloc
+	mov [BP-2], AX
+	push AX
+	push StringCopy
+	call KernelCall
+	mov AX, [BP-2]
+	push AX
+	push AX
+	call SetUpperCase
+	push FindFile8_3
+	call KernelCall
+	cmp AX, 0xFFFF
+	jne .fileFound
+	mov AX, [BP-2]
+	push AX
+	push FindFile
+	call KernelCall
+	mov [BP-4], AX
+	;TODO: Check for extension and if it's a valid extension
+	push cmdExecExt
+	mov AX, [BP-2]
+	push AX
+	push StringConcat
+	call KernelCall
+	mov AX, [BP-2]
+	push AX
+	push FindFile
+	call KernelCall
+	cmp AX, 0xFFFF
+	jne .fileFound
+	mov AX, [BP-4]
+	cmp AX, 0xFFFF
+	jne .fileFound
+	;No file was found, nothing to do
+	xor AX, AX
+.fileFound:
+	mov [BP-4], AX
+.cleanup:
+	mov AX, [BP-2]
+	push AX
+	call MemFree
+	mov AX, [BP-4]
+	mov SP, BP
+	pop BP
+	ret 2
+
 %include "system/command.asm"
 
 SECTION .data
@@ -268,5 +361,8 @@ rtestProgName db 'test.bin', 0
 
 clearCmdName db 'CLEAR', 0
 clearCmdDesc db 'Clears the screen', 0
+
+cmdNotFoundStr db 'Command or program not found.', 0xA, 0
+cmdExecExt db '.BIN', 0		;TODO: Executable extension thing
 
 %include "system/memory.asm"
