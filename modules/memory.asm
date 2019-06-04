@@ -53,6 +53,8 @@ InitHeap: ;void InitHeap(void *heapStart, void *heapEnd, int blockSize)
 	neg AX
 	add AX, [BP+6]
 	shr AX, CL
+	and AX, ~3	;Make sure unalloc & 3 = 0 so DX = 0 checks pass
+	;TODO: Add fake blocks at the end and add special checks for DX = 1
 	mov [BX-HeapHeader_size+HeapHeader.unalloc], AX
 	pop AX
 	sub AX, BX	;Get table length
@@ -87,7 +89,6 @@ InitHeap: ;void InitHeap(void *heapStart, void *heapEnd, int blockSize)
 	call _AllocBlockTable
 	pop DI
 	pop SI
-	;TODO: Check mem dump for headers and test implementation
 	pop BX
 	mov SP, BP
 	pop BP
@@ -288,6 +289,7 @@ _SetChainLength: ;_SetChainLength(length@AX)
 .seekEndOK:
 	mov AX, [BP-2]
 	sub AX, [BP-4]
+	;TODO: Check if it fails when only 1 block is free after end
 	mov [BP-6], AX
 	mov AL, [BX+SI]
 	shr AL, CL
@@ -897,9 +899,9 @@ STRUC BlockHeader
 .size resw 1
 ENDSTRUC
 
-MASK_CLEAR EQU 0b11101110
-MASK_SET EQU 0b00000001
-MASK_SET_LINK EQU 0b00010001
-MASK_LINK EQU 0b00010000
-MASK_UNLINK EQU 0b11101111
-MASK_EMPTY EQU 0b00001111
+MASK_CLEAR EQU 11101110b
+MASK_SET EQU 00000001b
+MASK_SET_LINK EQU 00010001b
+MASK_LINK EQU 00010000b
+MASK_UNLINK EQU 11101111b
+MASK_EMPTY EQU 00001111b
