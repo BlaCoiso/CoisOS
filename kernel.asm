@@ -99,6 +99,7 @@ KernelCall:	;System call wrapper for far->near calls
 	sub SP, CX	;Allocate space for arguments
 	sub SP, CX
 	mov DI, SP
+	;TODO: Optimize this function to reduce overhead in kernel calls
 .argLoop:
 	test CX, CX
 	jz .argDone
@@ -135,6 +136,7 @@ EmptyCall: ret
 %include "modules/filesystem.asm"
 %include "modules/debug.asm"
 %include "modules/program.asm"
+%include "modules/memory.asm"
 
 ;DATA
 SECTION .data
@@ -143,28 +145,28 @@ TestStr db 'Loading system executable...', 0xA, 0
 TestFname db 'system.bin', 0
 ReadFailStr db 'Failed to find/load system executable.', 0xA, 0
 TestDoneStr db 'Returned from system console. Press any key to reboot', 0xA, 0
-
+;Calls 0-4, 5-9
 krnCallTable dw ReadSector, WriteSector, StringLength, PrintString, PrintChar
 dw PrintByteHex, PrintHex, PrintNewLine, UInt2Str, Int2Str
-
+;Calls 10-14, 15-19
 dw PrintUInt, PrintInt, GetCursorPos, EmptyCall, SetCursorPos
 dw SetCursorPosXY, GetCursorAttribute, SetCursorAttribute, SetTextColor, GetKey
-
+;Calls 20-24, 25-29
 dw PrintTitle, ReadString, ReadStringSafe, MemoryCopy, StringCopy
 dw SetBackgroundColor, DisableCursorUpdate, EnableCursorUpdate, SetScreenPage, ClearScreen
-
+;Calls 30-34, 35-39
 dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
-dw DumpMemory, GetStackTrace, ExecProgram, EmptyCall, EmptyCall
-
+dw DumpMemory, GetStackTrace, ExecProgram, MemAlloc, MemFree
+;Calls 40-44, 45-49
 dw DrawBox, SetCursorOffset, ScrollScreen, SubStringCopy, StringConcat
-dw PrintStringL, GetScreenWidth, GetScreenHeight, EmptyCall, EmptyCall
+dw PrintStringL, GetScreenWidth, GetScreenHeight, StringCompare, EmptyCall
+;Calls 50-54
+dw GetFileCount, ListFiles, InitHeap, MemRealloc, EmptyCall
 
-dw GetFileCount, ListFiles, EmptyCall, EmptyCall, EmptyCall
-
-krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2
-dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0
-dw 1, 1, 2, 3, 2, 1, 0, 0, 1, 0
-dw 1, 1, 3, 3, 3, 3, 1, 4, 0, 0
-dw 5, 1, 1, 3, 2, 2, 0, 0, 0, 0
-dw 0, 3, 0, 0, 0
-KernelCallCount EQU 52
+krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2	;0-9
+dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0	;10-19
+dw 1, 1, 2, 3, 2, 1, 0, 0, 1, 0	;20-29
+dw 1, 1, 3, 3, 3, 3, 1, 4, 2, 2	;30-39
+dw 5, 1, 1, 3, 2, 2, 0, 0, 2, 0	;40-49
+dw 0, 3, 3, 3, 0	;50-54
+KernelCallCount EQU 54

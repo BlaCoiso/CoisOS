@@ -1,5 +1,5 @@
 SECTION .text
-;TODO: Refactor, implement memory management code in kernel and use kernel calls for free/alloc
+;WARNING: This file is deprecated. Use InitHeap/MemAlloc/MemRealloc/MemFree kernel calls.
 
 AllocInit:
 	push BP

@@ -16,6 +16,7 @@ void MemoryCopy(void *dest, void *source, int length);
 void StringCopy(char *dest, char *source);
 void SubStringCopy(char *dest, char *source, char *length);
 void StringConcat(char *dest, char *source);
+char StringCompare(char *str1, char *str2);
 void DrawBox(int x, int y, int width, int height, int box);
 void PrintStringL(char *string, int length);
 
@@ -59,3 +60,9 @@ void GetStackTrace(int *FrameBase);
 
 //Program calls
 int ExecProgram(int argc, char *argv[], int startIP, int segment);
+
+//Memory calls
+void InitHeap(void *heapStart, void *heapEnd, int blockSize);
+void MemFree(void *heapStart, void *ptr);
+void *MemAlloc(void *heapStart, int length);
+void *MemRealloc(void *heapStart, void *ptr, int length);

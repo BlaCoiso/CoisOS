@@ -41,10 +41,12 @@ FindFile8_3 EQU 31
 ReadFile EQU 32
 ReadFile8_3 EQU 33
 ReadFileEntry EQU 34
-;Debug Calls (v1) / Program Calls (v2)
+;Debug Calls (v1) / Program Calls (v2) / Allocator Calls (v2)
 DumpMemory EQU 35
 GetStackTrace EQU 36
 ExecProgram EQU 37
+MemAlloc EQU 38
+MemFree EQU 39
 ;String/Screen Calls (v2)
 DrawBox EQU 40
 SetCursorOffset EQU 41
@@ -54,6 +56,9 @@ StringConcat EQU 44
 PrintStringL EQU 45
 GetScreenWidth EQU 46
 GetScreenHeight EQU 47
-;Filesystem Calls (v2)
+StringCompare EQU 48
+;Filesystem Calls (v2) / Allocator Calls (v2)
 GetFileCount EQU 50
 ListFiles EQU 51
+InitHeap EQU 52
+MemRealloc EQU 53

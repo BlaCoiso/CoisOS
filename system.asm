@@ -11,7 +11,11 @@ SysInit:
 	call KernelCall
 	push ClearScreen
 	call KernelCall
-	call AllocInit
+	push 8
+	push 0xFFFF-0xAC00
+	push heapStart
+	push InitHeap
+	call KernelCall
 	call SysMain
 	push 0
 	push SetScreenPage
@@ -139,7 +143,7 @@ FileList:
 	mul CL
 	inc AL
 	push AX
-	call MemAlloc	
+	call malloc	
 	mov [BP-2], AX
 	push 0	;Start
 	push AX	;Buffer
@@ -187,10 +191,10 @@ FileList:
 	call KernelCall
 	pop SI
 	pop BX
-	call MemFree
+	call free
 	mov AX, [BP-2]
 	push AX
-	call MemFree
+	call free
 	mov SP, BP
 	pop BP
 	ret 4
@@ -275,7 +279,7 @@ FindProgramEntry:
 	call KernelCall
 	add AX, 5	;Reserve 4 bytes for extension and 1 for null terminator
 	push AX
-	call MemAlloc
+	call malloc
 	mov [BP-2], AX
 	push AX
 	push StringCopy
@@ -315,8 +319,46 @@ FindProgramEntry:
 .cleanup:
 	mov AX, [BP-2]
 	push AX
-	call MemFree
+	call free
 	mov AX, [BP-4]
+	mov SP, BP
+	pop BP
+	ret 2
+
+malloc:	;void *malloc(int size)
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	push AX
+	push heapStart
+	push MemAlloc
+	call KernelCall
+	mov SP, BP
+	pop BP
+	ret 2
+
+realloc:	;void *realloc(void *ptr, int size)
+	push BP
+	mov BP, SP
+	mov AX, [BP+6]
+	push AX
+	mov AX, [BP+4]
+	push AX
+	push heapStart
+	push MemRealloc
+	call KernelCall
+	mov SP, BP
+	pop BP
+	ret 4
+
+free:	;void free(void *ptr)
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	push AX
+	push heapStart
+	push MemFree
+	call KernelCall
 	mov SP, BP
 	pop BP
 	ret 2
@@ -365,4 +407,7 @@ clearCmdDesc db 'Clears the screen', 0
 cmdNotFoundStr db 'Command or program not found.', 0xA, 0
 cmdExecExt db '.BIN', 0		;TODO: Executable extension thing
 
-%include "system/memory.asm"
+SECTION .bss
+
+SECTION .dynAlloc vfollows=.bss nobits
+heapStart:

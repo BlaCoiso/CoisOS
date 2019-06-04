@@ -1,0 +1,463 @@
+Kernel Memory Allocator for CoisOS: Implementation details
+
+
+Heap Header:
+	size in bytes
+	heap start ptr
+	unallocated blocks
+	block size (bytes): can be 64, 32, 16 or 8 bytes
+	block shift (bit count): 64=6, 32=5, 16=4, 8=3
+	*block table follows*
+Block Table Header:
+	parent ptr
+	next ptr
+	size in blocks
+Block Structure:
+	LLLLUUUU
+	L: Block is linked to next block
+	U: Block is used
+	L set without U is invalid
+
+Register usage:
+	AX: - (volatile)
+	BX: Current Block Table ptr
+	CL: Current Block shift
+	CH: - (volatile)
+	DX: Remaining Table Blocks
+	SI: Current Block offset
+	DI: Heap Header ptr
+	Masks:
+		Clear Mask	=	0b11101110
+		Set Mask	=	0b00000001
+		Set and Link=	0b00010001
+		Unlink		=	0b11101111
+		Empty		=	0b00001111
+
+Required functions:
+	Init heap(heapStart, heapEnd, blockSize)
+
+	Init registers(heapPtr)
+	Reset registers
+
+	Go to next block
+	Seek n blocks
+	Get chain length
+	Set chain length
+	Clear chain
+	Get chain address
+	Get chain ID
+	Get ID from address
+	Get address from ID
+	Set chain ID (get chain from ID)
+	Get chain from address
+	Find next free chain with size@AX
+	Skip current chain
+
+	Alloc block table
+
+	Get bytes from block count
+	Get block count from bytes
+
+	Note: Go to next block seeks to next block table entry, seeking 1-4 blocks and going to next entry byte
+	Note: Chain address is pointer to block data, chain ID is number (0=first block)
+
+Required function implementations:
+    Note: Any references to store state should save CL(CX), DX, SI, DI, restore state should restore these registers
+	Note: Failing functions that would return pointers should return NULL, other functions should return -1 (0xFFFF), return 0 or value on success
+	Init heap -> InitHeap(void *heapStart, void *heapEnd, int blockSize)
+		heapHeader->size=heapEnd-heapStart
+		If blockSize >= 64 then
+			blockSize = 64
+			blockShift = 6
+		Else if blockSize >= 32 then
+			blockSize = 32
+			blockShift = 5
+		Else if blockSize >= 16 then
+			blockSize = 16
+			blockShift = 4
+		Else
+			blockSize = 8
+			blockShift = 3
+		End
+		heapHeader->blockSize = blockSize
+		heapHeader->blockShift = blockShift
+		mask = blockSize - 1
+		allocStart = heapStart + heapHeaderSize + 128
+		If allocStart & mask then align
+		heapHeader->unalloc = ((heapEnd - allocStart) >> blockShift) & ~3
+		TODO: Implement a way to use the last blocks
+		tableLen = allocStart - (heapStart + heapHeaderSize) - tableHeaderSize
+		shl tableLen, blockShift
+		clear table
+		If tableLen > heapHeader->unalloc then
+			tableLen = heapHeader->unalloc
+		End
+		sub heapHeader->unalloc, tableLen
+		tableHeader->size = tableLen
+		tableHeader->parent = NULL
+		tableHeader->next = NULL
+		_InitMemRegs(heapStart)
+		_AllocBlockTable()
+
+	Init registers -> _InitMemRegs(void *heapStart)
+		DI = heapStart
+		_ResetMemRegs()
+	
+	Reset registers -> _ResetMemRegs()
+		CL = 0
+		SI = block table header size
+		BX = heapStart + heapHeaderSize
+		DX = table block count
+
+	Go to next block -> _SeekHeapBlock()
+		DX -= 4 - CL
+		CL = 0
+		If DX = 0 then
+			If not current table->next then fail
+			SI = block table header size
+			BX = current table->next
+			DX = table block count
+			_AllocBlockTable()
+		Else
+			SI++
+		End
+	
+	Seek n blocks -> _SeekBlocks(count@AX)
+		If count = 0 return
+		If (count < 4 and count + CL >= 4) or (count >= 4 and CL != 0) then
+			count -= 4 - CL
+			_SeekHeapBlock()
+		End
+		While count >= 4 do 
+			_SeekHeapBlock()
+			sub count, 4
+		End
+		add CL, count
+		sub DX, count
+
+	Get chain length -> _GetChainLength()
+		Store state
+		len = 0
+		AL = [BX+SI]
+		shr AL, CL
+		While AL & MASK_LINK
+			inc len
+			If CL = 3 then
+				_SeekHeapBlock()
+				AL = [BX+SI]
+			Else
+				inc CL
+				dec DX
+				shr AL, 1
+			End
+		End
+		If AL & MASK_SET then len++
+		Else
+			//invalid chain, attempt to fix (this shouldn't happen)
+			AL = [BX+SI]
+			CH = MASK_UNLINK
+			rol CH, CL
+			and AL, CH
+			[BX+SI] = AL
+		End
+		Restore state
+		return len
+	
+	Set chain length -> _SetChainLength(length@AX)
+		currentLen = _GetChainLength()
+		targetLen = length
+		If currentLen = targetLen then return
+		If targetLen = 0 then _ClearChain()
+		Else if targetLen < currentLen then
+			Store state
+			_SeekBlocks(targetLen-1)
+			AL = [BX+SI]
+			CH = MASK_UNLINK
+			rol CH, CL
+			and AL, CH
+			[BX+SI] = AL
+			If CL = 3 then
+				_SeekHeapBlock()
+			Else
+				inc CL
+				dec DX
+			End
+			_ClearChain()
+			Restore state
+		Else
+			Store state
+			_SeekEndChain()
+			Store state
+			If CL = 3 then
+				_SeekHeapBlock()
+			Else
+				inc CL
+				dec DX
+			End
+			count = targetLen - currentLen
+			AL = [BX+SI]
+			shr AL, CL
+			While count-- do
+				If AL & MASK_SET then fail
+				If CL = 3 then
+					_SeekHeapBlock()
+					AL = [BX+SI]
+				Else
+					inc CL
+					dec DX
+					shr AL, 1
+				End
+			End
+			Restore state
+			AL = [BX+SI]
+			CH = MASK_SET_LINK
+			shl CH, CL
+			count = targetLen - currentLen - 1
+			While count-- do
+				or AL, CH
+				If CL = 3 then
+					[BX+SI] = AL
+					_SeekHeapBlock()
+					AL = [BX+SI]
+					CH = MASK_SET_LINK
+				Else
+					inc CL
+					dec DX
+					shl CH, 1
+				End
+			End
+			CH = MASK_SET
+			shl CH, CL
+			or AL, CH
+			[BX+SI] = AL
+			Restore state
+		End
+    
+    Clear chain -> _ClearChain()
+        Store state
+        count = _GetChainLength()
+        AL = [BX+SI]
+        CH = MASK_CLEAR
+        rol CH, CL
+        While count-- do
+            and AL, CH
+            If CL = 3 then
+                [BX+SI] = AL
+                _SeekHeapBlock()
+                AL = [BX+SI]
+                CH = MASK_CLEAR
+            Else
+                inc CL
+                dec DX
+                rol CH, 1
+            End
+        End
+        Restore state
+    
+    Get chain address -> _GetChainAddress()
+        ID = _GetChainID()
+		AX = _GetIDAddress(ID)
+        return AX
+    
+	Get ID from address -> _GetAddressID(Address@AX)
+		Save CL
+		tempID = Address
+        sub tempID, heapPtr->allocStart
+        CL = block shift
+        shr tempID, CL
+		return tempID
+
+	Get address from ID -> _GetIDAddress(ID@AX)
+		Save CL
+		CL = block shift
+		Address = ID
+        shl Address, CL
+        add Address, heapPtr->allocStart
+		return Address
+
+    Get chain ID -> _GetChainID()
+        Store state
+        AX = table->size
+        sub AX, DX
+        ID = AX
+        While table->parent do
+            BX = table->parent
+            add ID, table->size
+        End
+        Restore state
+        return ID
+    
+    Set chain ID -> _SetChainID(ID@AX)
+        tempID = ID
+        _ResetMemRegs()
+        AX = table->size
+        While tempID >= AX do
+            sub tempID, AX
+            If table->next then BX = table->next
+            Else fail
+        End
+        DX = AX - tempID
+        CL = tempID & 3
+        SI = tempID >> 2
+
+    Get chain from address -> _GetChainAtAddress(Address@AX)
+        tempID = _GetAddressID(Address)
+        _SetChainID(tempID)
+    
+    Find next free chain with size -> _NextFreeChain(size@AX)
+        len = 0
+        reqSize = size
+        AL = [BX+SI]
+        shr AL, CL
+        Store state
+        While len < reqSize do
+            If CL = 0 and not AL & MASK_EMPTY then
+                add len, 4
+                _SeekHeapBlock()
+                AL = [BX+SI]
+            Else if not AL & MASK_SET then
+                inc len
+                If CL = 3 then
+                    _SeekHeapBlock()
+                    AL = [BX+SI]
+                Else
+                    inc CL
+                    dec DX
+                    shr AL, 1
+                End
+            Else
+                len = 0
+                Clear stored state
+                _SkipChain()
+                Store state
+                AL = [BX+SI]
+                shr AL, CL
+            End
+        End
+        Restore state
+    
+    Seek to end of current chain -> _SeekEndChain()
+        AL = [BX+SI]
+		shr AL, CL
+		If not AL & MASK_LINK then return
+		While AL & MASK_LINK
+			If CL = 3 then
+				_SeekHeapBlock()
+				AL = [BX+SI]
+			Else
+				inc CL
+				dec DX
+				shr AL, 1
+			End
+		End
+        If not AL & MASK_SET then
+			//invalid chain, attempt to fix (this shouldn't happen)
+			AL = [BX+SI]
+			CH = MASK_UNLINK
+			rol CH, CL
+			and AL, CH
+			[BX+SI] = AL
+		End
+	
+	Skip current chain -> _SkipChain()
+		_SeekEndChain()
+		AL = [BX+SI]
+		shr AL, CL
+		If not AL & MASK_SET then return
+		If CL = 3 then
+			_SeekHeapBlock()
+		Else
+			inc CL
+			dec DX
+		End
+    
+    Alloc block table -> _AllocBlockTable()
+        Store state
+		_ResetMemRegs()
+		If heapHeader->unalloc then
+			tableSize = 0
+			allocSize = 0
+			If heapHeader->unalloc >= (128 - tableHeaderSize) * 4 then 
+				tableSize = (128 - tableHeaderSize) * 4
+				allocSize = 128
+			Else
+				tableSize = heapHeader->unalloc
+				allocSize = ceil(tableSize / 4) + tableHeaderSize
+			End
+			tempUnalloc = heapHeader->unalloc
+			heapHeader->unalloc = 0	//Prevent malloc from trying to call _AllocBlockTable again
+			nextPtr = malloc(allocSize)
+			heapHeader->unalloc = tempUnalloc
+			If not nextPtr then fail
+			While tableHeader->next do
+				BX = tableHeader->next
+			End
+			parentPtr = BX
+			tableHeader->next = nextPtr
+			BX = nextPtr
+			clear table
+			tableHeader->parent = parentPtr
+			tableHeader->next = NULL
+			tableHeader->size = tableSize
+			sub heapHeader->unalloc, tableSize
+		End
+	Restore state
+
+	Get bytes from block count -> _BytesFromBlocks(blocks@AX)
+		Save CL
+		CL = blockShift
+		bytes = blocks
+		shl bytes, CL
+		return bytes
+
+	Get block count from bytes -> _BlocksFromBytes(bytes@AX)
+		Save CL
+		blocks = bytes
+		Mask = blockSize - 1
+		If blocks & mask then 
+			blocks >> blockShift
+			inc blocks
+		Else blocks >> blockShift
+		return blocks		
+
+void MemFree(void *heapStart, void *ptr):
+	_InitMemRegs(heapStart)
+	Check valid address(ptr)
+	_GetChainAtAddress(ptr)
+	Check if set used:
+		AL = [BX+SI]
+		shr AL, CL
+		test AL, MASK_SET
+		jz .noFree
+	_ClearChain()
+
+void *MemAlloc(void *heapStart, int length):
+	_InitMemRegs(heapStart)
+	blockLen = _BlocksFromBytes(length)
+	_NextFreeChain(blockLen)
+	If fail then return NULL
+	_SetChainLength(blockLen)
+	memPtr = _GetChainAddress()
+	return memPtr
+
+void *MemRealloc(void *heapStart, void *ptr, int length):
+	_InitMemRegs(heapStart)
+	Check valid address(ptr)
+	blockLen = _BlocksFromBytes(length)
+	_GetChainAtAddress(ptr)
+	Check if set used (Implementation at MemFree)
+	chainLen = _GetChainLength()
+	If blockLen = chainLen then return address
+	If blockLen < chainLen then
+		_SetChainLength(blockLen)
+		return address
+	Else
+		_SetChainLength(blockLen)
+		If fail then
+			newMem = MemAlloc(bytes)
+			Copy(oldMem->newMem)
+			MemFree(oldMem)
+			return newMem
+		Else return address
+	End
+		

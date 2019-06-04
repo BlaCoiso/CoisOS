@@ -736,6 +736,47 @@ StringConcat: ;void StringConcat(char *dest, char *source)
 	pop BP
 	ret 4
 
+StringCompare: ;char StringCompare(char *str1, char *str2)
+	push BP
+	mov BP, SP
+	mov AX, [BP+4]
+	cmp AX, [BP+6]
+	je .equalPtr
+	push AX
+	call StringLength
+	inc AX
+	mov CX, AX
+	push ES
+	push SI
+	push DI
+	push DS
+	pop ES
+	mov SI, [BP+4]
+	mov DI, [BP+6]
+	repe cmpsb
+	jne .diff
+	test CX, CX
+	jnz .diff
+	xor AX, AX
+.end:
+	pop DI
+	pop SI
+	pop ES
+	mov SP, BP
+	pop BP
+	ret 4
+.diff:
+	dec SI
+	dec DI
+	mov AL, [SI]
+	sub AL, [DI]
+	jmp .end
+.equalPtr:
+	xor AX, AX
+	mov SP, BP
+	pop BP
+	ret 4
+
 %include "drivers/screen.asm"
 
 SECTION .data

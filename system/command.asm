@@ -16,7 +16,7 @@ HandleCommand: ;void HandleCommand()
 	jz .emptyBuf
 	inc AX
 	push AX
-	call MemAlloc
+	call malloc
 	mov [BP-2], AX
 	push CmdBuffer
 	push AX
@@ -157,10 +157,10 @@ HandleCommand: ;void HandleCommand()
 .bufferCleanup:
 	mov AX, [BP-2]
 	push AX
-	call MemFree
+	call free
 	mov AX, [BP-4]
 	push AX
-	call MemFree
+	call free
 .emptyBuf:
 	pop SI
 	mov SP, BP
@@ -212,7 +212,7 @@ GetTokenArray: ;char **GetTokenArray(char *buffer, int length, int count)
 	mov AX, [BP+8]
 	shl AX, 1
 	push AX
-	call MemAlloc
+	call malloc
 	mov [BP-2], AX
 	mov DI, AX
 	mov CX, [BP+6]
@@ -263,7 +263,7 @@ FindCommand: ;CMD *FindCommand(char *cmdName)
 	call KernelCall
 	inc AX
 	push AX
-	call MemAlloc
+	call malloc
 	mov [BP-2], AX
 	mov SI, AX
 	mov AX, [BP+4]
@@ -319,7 +319,7 @@ FindCommand: ;CMD *FindCommand(char *cmdName)
 	push AX
 	mov AX, [BP-2]
 	push AX
-	call MemFree
+	call free
 	pop AX
 	pop ES
 	pop DI
