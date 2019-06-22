@@ -8,10 +8,11 @@ Int3Handler:
 	pusha	;[BP+2] - [BP+16]
 	push BP
 	mov BP, SP
-	sub SP, 4
+	sub SP, 6
 	;[BP-2] - Previous screen page
 	;[BP-4] - Previous cursor pos
-	push AX ;[BP-6]
+	;[BP-6] - Previous cursor offset X
+	push AX ;[BP-8]
 	mov AX, [BP+20]
 	cmp AX, 0xF000
 	jae .intret	;BIOS segment, don't interrupt
@@ -25,6 +26,10 @@ Int3Handler:
 	xor AH, AH
 	mov AL, [_ScreenPage]
 	mov [BP-2], AX
+	mov AX, [_OffsetX]
+	mov [BP-6], AX
+	push 0
+	call SetCursorOffset
 	push 3
 	call SetScreenPage
 	call ClearScreen
@@ -39,7 +44,7 @@ Int3Handler:
 	popf	;Load flags before interrupt
 	mov AX, [BP]
 	push AX	;Old BP
-	mov AX, [BP-6]
+	mov AX, [BP-8]
 	push AX	;Old AX
 	lea AX, [BP+22]
 	push AX	;Old SP
@@ -114,6 +119,9 @@ Int3Handler:
 	mov AX, [BP-2]
 	push AX
 	call SetScreenPage
+	mov AX, [BP-6]
+	push AX
+	call SetCursorOffset
 	mov AX, [BP-4]
 	push AX
 	call SetCursorPos

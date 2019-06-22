@@ -366,7 +366,7 @@ free:	;void free(void *ptr)
 %include "system/command.asm"
 
 SECTION .data
-initStr db 'CoisOS Console v0.0 (test version)', 0xA
+initStr db 'CoisOS Console v0.1 (test version)', 0xA
 db 'For a list of commands, type "help"', 0xA, 0
 prompt db 'CoisOS>', 0
 canExit db 0

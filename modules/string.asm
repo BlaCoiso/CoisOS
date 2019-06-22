@@ -576,6 +576,7 @@ DrawBox: ;void DrawBox(int x, int y, int width, int height, int box)
 	xor AL, AL
 .skipFix:
 	;TODO: Don't display sides of box if they're outside the screen
+	;FIXME: Allow using last 2 lines of the screen
 	push AX
 	call GetScreenWidth
 	sub AX, 2

@@ -6,6 +6,14 @@ _InitScreen:
 	xor AX, AX
 	mov [_ScreenPage], AL
 	mov [_OffsetX], AL
+	push BP
+	push BX
+	mov AH, 0x10
+	mov AL, 3
+	xor BL, BL	;Disable blinking mode
+	int 0x10
+	pop BX
+	pop BP
 	call ReadCursorPos
 	ret
 
@@ -138,6 +146,7 @@ GetCursorAttribute: ;int GetCursorAttribute()
 	mov BP, SP
 	push DS
 	mov AX, KRN_SEG
+	mov DS, AX
 	mov AL, [_CursorAttribute]
 	xor AH, AH
 	pop DS
@@ -166,6 +175,9 @@ SetTextColor: ;void SetTextColor(int color)
 	and AH, 0xF
 	or AL, AH
 	mov [FS:BX+1], AL
+	mov AL, [_CursorAttribute]
+	and AL, 0xF0
+	or AL, AH
 	mov [_CursorAttribute], AL
 	pop BX
 	pop FS
@@ -196,6 +208,9 @@ SetBackgroundColor: ;void SetBackgroundColor(int color)
 	and AH, 0xF0
 	or AL, AH
 	mov [FS:BX+1], AL
+	mov AL, [_CursorAttribute]
+	and AL, 0x0F
+	or AL, AH
 	mov [_CursorAttribute], AL
 	pop BX
 	pop FS
@@ -222,6 +237,19 @@ SetScreenPage: ;void SetScreenPage(int page)
 	mov SP, BP
 	pop BP
 	ret 2
+
+GetScreenPage: ;int GetScreenPage()
+	push BP
+	mov BP, SP
+	push DS
+	mov AX, KRN_SEG
+	mov DS, AX
+	xor AX, AX
+	mov AL, [_ScreenPage]
+	pop DS
+	mov SP, BP
+	pop BP
+	ret
 
 _GetCursorPtr: ;void *_GetCursorPtr()
 	;Assume DS is already set
@@ -491,7 +519,7 @@ SetCursorOffset: ;void SetCursorOffset(int offset)
 	call GetScreenWidth
 	mov CX, [BP+4]
 	cmp CX, AX
-	jae .offsetOK
+	jb .offsetOK
 	xor CX, CX
 .offsetOK:
 	mov [_OffsetX], CL
@@ -561,6 +589,50 @@ PrintStringL: ;void PrintStringL(char *string, int length)
 	pop BP
 	ret 4
 
+FillBackgroundColor: ;void FillBackgroundColor(int color)
+	push BP
+	mov BP, SP
+	push DS
+	push FS
+	push BX
+	mov AX, KRN_SEG
+	mov DS, AX
+	xor AH, AH
+	mov AL, [_ScreenPage]
+	shl AX, 8	;Each screen page segment has an offset of 0x100
+	add AX, VGA_SEG
+	mov ES, AX
+	xor DI, DI
+	inc DI
+	mov AL, [_CursorAttribute]
+	and AL, 0x0F
+	mov AH, [BP+4]
+	shl AH, 4
+	and AH, 0x70
+	or AL, AH
+	mov [_CursorAttribute], AL
+	push AX
+	mov CL, [_ScreenWidth]
+	mov AL, [_ScreenHeight]
+	mul CL
+	mov CX, AX
+	pop AX
+.loop:
+	jcxz .loopEnd
+	mov AL, [ES:DI]
+	and AL, 0x0F
+	or AL, AH
+	stosb
+	dec CX
+	inc DI
+	jmp .loop
+.loopEnd:
+	pop BX
+	pop ES
+	pop DS
+	mov SP, BP
+	pop BP
+	ret 2
 
 
 SECTION .data

@@ -10,7 +10,9 @@ jmp DumpRegistersFar	;0x7C0:5
 %include "consts.inc"
 
 OS_PreInit:
-	mov AX, KRN_SEG
+	mov AX, CS
+	cmp AX, KRN_SEG
+	jne kernelNotExec
 	mov DS, AX
 	mov ES, AX
 	mov SP, 0x7300
@@ -63,6 +65,15 @@ OS_Init:
 	push TestDoneStr
 	call PrintString
 	jmp Reboot
+	
+kernelNotExec:
+	;TODO: Add a version file and some kind of PrintVersion thing
+	;TODO: Start using some kind of version thing (vM.m.p (git-0000000))
+	push NotExecStr
+	call PrintString
+	xor AX, AX
+	not AX
+	retf
 	
 ;System Functions
 
@@ -145,6 +156,7 @@ TestStr db 'Loading system executable...', 0xA, 0
 TestFname db 'system.bin', 0
 ReadFailStr db 'Failed to find/load system executable.', 0xA, 0
 TestDoneStr db 'Returned from system console. Press any key to reboot', 0xA, 0
+NotExecStr db 'Kernel cannot be executed as a program.', 0xA, 0
 ;Calls 0-4, 5-9
 krnCallTable dw ReadSector, WriteSector, StringLength, PrintString, PrintChar
 dw PrintByteHex, PrintHex, PrintNewLine, UInt2Str, Int2Str
@@ -159,14 +171,15 @@ dw FindFile, FindFile8_3, ReadFile, ReadFile8_3, ReadFileEntry
 dw DumpMemory, GetStackTrace, ExecProgram, MemAlloc, MemFree
 ;Calls 40-44, 45-49
 dw DrawBox, SetCursorOffset, ScrollScreen, SubStringCopy, StringConcat
-dw PrintStringL, GetScreenWidth, GetScreenHeight, StringCompare, EmptyCall
-;Calls 50-54
+dw PrintStringL, GetScreenWidth, GetScreenHeight, StringCompare, GetScreenPage
+;Calls 50-54, 55-59
 dw GetFileCount, ListFiles, InitHeap, MemRealloc, EmptyCall
+dw FillBackgroundColor, EmptyCall, EmptyCall, EmptyCall, EmptyCall
 
 krnCallArgs dw 4, 4, 1, 1, 1, 1, 1, 0, 2, 2	;0-9
 dw 1, 1, 0, 0, 1, 2, 0, 1, 1, 0	;10-19
 dw 1, 1, 2, 3, 2, 1, 0, 0, 1, 0	;20-29
 dw 1, 1, 3, 3, 3, 3, 1, 4, 2, 2	;30-39
 dw 5, 1, 1, 3, 2, 2, 0, 0, 2, 0	;40-49
-dw 0, 3, 3, 3, 0	;50-54
-KernelCallCount EQU 54
+dw 0, 3, 3, 3, 0, 1, 0, 0, 0, 0	;50-54
+KernelCallCount EQU 56

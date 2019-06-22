@@ -3,7 +3,7 @@ _KernelCall EQU 2
 _DumpRegisters EQU 5
 %define KernelCall KRN_SEG:_KernelCall
 %define DumpRegisters KRN_SEG:_DumpRegisters
-KERNEL_API_V EQU 2
+KERNEL_API_V EQU 3
 ReadSector EQU 0
 WriteSector EQU 1
 ;String Calls (v1)
@@ -57,8 +57,11 @@ PrintStringL EQU 45
 GetScreenWidth EQU 46
 GetScreenHeight EQU 47
 StringCompare EQU 48
+GetScreenPage EQU 49
 ;Filesystem Calls (v2) / Allocator Calls (v2)
 GetFileCount EQU 50
 ListFiles EQU 51
 InitHeap EQU 52
 MemRealloc EQU 53
+;Screen Calls (v3)
+FillBackgroundColor EQU 55

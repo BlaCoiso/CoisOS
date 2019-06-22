@@ -168,6 +168,9 @@ _DumpRegisters: ;void _DumpRegisters(CS,IP,SP,AX,BP)
 	mov BL, 12
 	call .printRegister
 	call PrintNewLine
+	mov AX, [BP+26]	;Load IP
+	mov BL, 9
+	call .printRegister
 	mov AX, SS	;Load SS
 	mov BL, 8
 	call .printRegister
@@ -176,9 +179,6 @@ _DumpRegisters: ;void _DumpRegisters(CS,IP,SP,AX,BP)
 	call .printRegister
 	mov AX, [BP+32]	;Load BP
 	mov BL, 11
-	call .printRegister
-	mov AX, [BP+26]	;Load IP
-	mov BL, 9
 	call .printRegister
 	call PrintNewLine
 	push _FlagStr

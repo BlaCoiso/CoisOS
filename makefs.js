@@ -7,7 +7,9 @@ const clusterSize = FSData.clusterSize * 512;
 let nextFreeCluster = 2;
 let fileCount = 0;
 let FATBuffer = new Buffer(FSData.FATSize * 512);
+FATBuffer.fill(0);
 let RootDirBuffer = new Buffer(FSData.rootEntryCount * 32);
+RootDirBuffer.fill(0);  //Some versions of node.js don't clear the buffer
 let FileDataBuffer = new Buffer(clusterSize * 4);
 
 function allocFileBuffer() {
@@ -92,7 +94,11 @@ function writeFile(file) {
 FATBuffer.writeUInt16LE(0xFFF0 | FSData.descriptor, 0);
 FATBuffer.writeUInt16LE(0xFFFF, 2);
 for (let file of FSData.files) {
-    writeFile(file);
+    try {
+        writeFile(file);
+    } catch (e) {
+        console.error(`Failed to write file ${file.path}(${file.name}): ${e.message}`);
+    }
 }
 fs.writeFileSync("fat.bin", FATBuffer);
 fs.writeFileSync("rootdir.bin", RootDirBuffer);
